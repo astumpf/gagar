@@ -96,7 +96,7 @@ class Logger(Subscriber):
 
     def on_sock_open(self):
         self.on_update_msg('Connected to %s' % self.client.address)
-        self.on_update_msg('Token: %s' % self.client.token)
+        #self.on_update_msg('Token: %s' % self.client.token)
 
     def on_world_rect(self, **kwargs):
         self.on_update_msg('World is from %(left)i:%(top)i to %(right)i:%(bottom)i' % kwargs)
@@ -281,7 +281,7 @@ def main():
         address = None
 
     if address and address[0] in 'Pp':
-        address, *_ = get_party_address(token)
+        address = get_party_address(token)
 
     if not address:
         address, token, *_ = find_server()
