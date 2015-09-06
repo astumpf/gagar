@@ -62,7 +62,8 @@ class WorldViewer(object):
 
     def key_pressed(self, _, event):
         """Called by GTK. Set input_subscriber to handle this."""
-        if not self.input_subscriber: return
+        if not self.input_subscriber:
+            return
         val = event.keyval
         try:
             char = chr(val)
@@ -72,7 +73,8 @@ class WorldViewer(object):
 
     def mouse_moved(self, _, event):
         """Called by GTK. Set input_subscriber to handle this."""
-        if not self.input_subscriber: return
+        if not self.input_subscriber:
+            return
         self.mouse_pos = Vec(event.x, event.y)
         pos_world = self.screen_to_world_pos(self.mouse_pos)
         self.input_subscriber.on_mouse_moved(pos=self.mouse_pos, pos_world=pos_world)

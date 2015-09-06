@@ -1,10 +1,59 @@
 from collections import deque
-from time import time
+from time import time, sleep
+import sched
+import threading
 
 from agarnet.vec import Vec
 
 from .drawutils import *
 from .subscriber import Subscriber
+from .teamer import AgarioTeamer, State
+
+
+class TeamOverlay(Subscriber):
+    def __init__(self, client):
+        self.client = client
+
+        self.teamer = AgarioTeamer()
+        self.state = None
+
+        self.scheduler = sched.scheduler(time, sleep)
+        self.scheduler.enter(1, 1, self.send_state)
+        thread = threading.Thread(target=self.scheduler.run)
+        thread.setDaemon(True)
+        thread.start()
+
+    def get_state(self, world):
+        x, y = world.player.center
+        token = self.client.server_token if len(self.client.server_token) == 5 else 'FFA'
+        state = State(world.player.nick, x, y, token, world.player.total_mass)
+        return state
+
+    def send_state(self):
+        # print("Sending current state!")
+        if len(self.teamer.team_list) > 0:
+            self.teamer.send_state_to_all(self.state)
+        self.scheduler.enter(1, 1, self.send_state)
+
+    def on_draw_hud(self, c, w):
+        state = self.get_state(w)
+        if self.state is None:
+            self.teamer.send_discover(state)
+        self.state = state
+
+        c.draw_text((10, 30), 'Team',
+                    align='left', color=WHITE, outline=(BLACK, 2), size=27)
+
+        for i, peer in enumerate(self.teamer.team_list.values()):
+            c.draw_text((10, 60 + 30 * i), peer.last_state.name + '(' + str(peer.last_state.mass) + ')' + ' (' + peer.last_state.server + ')',
+                        align='left', color=GRAY, outline=(BLACK, 2), size=18)
+
+            c.draw_line(w.world_to_screen_pos(w.player.center),
+                        w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
+                        width=1, color=RED)
+
+        # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
+
 
 
 class Minimap(Subscriber):
@@ -52,7 +101,7 @@ class Leaderboard(Subscriber):
                 color = LIGHT_GRAY
             else:
                 color = WHITE
-            c.draw_text((w.win_size.x - 10, 40 + 23*rank), text,
+            c.draw_text((w.win_size.x - 10, 40 + 23 * rank), text,
                         align='right', color=color, outline=(BLACK, 2), size=18)
 
 
@@ -97,8 +146,10 @@ class ExperienceMeter(Subscriber):
         self.next_xp = next_xp
 
     def on_draw_hud(self, c, w):
-        if self.level == 0: return
-        if w.player.is_alive: return
+        if self.level == 0:
+            return
+        if w.player.is_alive:
+            return
         bar_width = 200
         level_height = 30
         x = (w.win_size.x - bar_width - level_height) / 2
@@ -120,8 +171,8 @@ class ExperienceMeter(Subscriber):
 class FpsMeter(Subscriber):
     def __init__(self, queue_len):
         self.draw_last = self.world_last = time()
-        self.draw_times = deque([0]*queue_len, queue_len)
-        self.world_times = deque([0]*queue_len, queue_len)
+        self.draw_times = deque([0] * queue_len, queue_len)
+        self.world_times = deque([0] * queue_len, queue_len)
 
     def on_world_update_post(self):
         now = time()
@@ -131,17 +182,17 @@ class FpsMeter(Subscriber):
 
     def on_draw_hud(self, c, w):
         for i, t in enumerate(self.draw_times):
-            c.draw_line(w.win_size - Vec(4*i - 2, 0), relative=(0, -t * 1000),
+            c.draw_line(w.win_size - Vec(4 * i - 2, 0), relative=(0, -t * 1000),
                         width=2, color=to_rgba(RED, .3))
 
         for i, t in enumerate(self.world_times):
-            c.draw_line(w.win_size - Vec(4*i, 0), relative=(0, -t * 1000),
+            c.draw_line(w.win_size - Vec(4 * i, 0), relative=(0, -t * 1000),
                         width=2, color=to_rgba(YELLOW, .3))
 
         # 25, 30, 60 FPS marks
         graph_width = 4 * len(self.draw_times)
-        for fps, color in ((25,ORANGE), (30,GREEN), (60,BLUE)):
-            c.draw_line(w.win_size - Vec(graph_width, 1000/fps),
+        for fps, color in ((25, ORANGE), (30, GREEN), (60, BLUE)):
+            c.draw_line(w.win_size - Vec(graph_width, 1000 / fps),
                         relative=(graph_width, 0),
                         width=.5, color=to_rgba(color, .3))
 

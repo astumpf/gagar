@@ -33,10 +33,10 @@ class NativeControl(Subscriber):
         self.send_mouse()
 
     def on_mouse_pressed(self, button):
-        if button == 2: # Middle click
+        if button == 2:  # Middle click
             self.send_mouse()
             self.client.send_shoot()
-        elif button == 3: # Right click
+        elif button == 3:  # Right click
             self.send_mouse()
             self.client.send_split()
 
@@ -47,8 +47,8 @@ class NativeControl(Subscriber):
         elif val == Gdk.KEY_space:
             self.send_mouse()
             self.client.send_split()
-        elif char == 'k':
-            self.client.send_explode()
+            # elif char == 'k':
+            # self.client.send_explode()
 
 
 def format_log(lines, width, indent='  '):
@@ -65,7 +65,7 @@ class Logger(Subscriber):
     def __init__(self, client):
         self.client = client
         self.log_msgs = []
-        self.leader_best = 11 # outside leaderboard, to show first msg on >=10
+        self.leader_best = 11  # outside leaderboard, to show first msg on >=10
 
     def on_log_msg(self, msg, update=0, tag='[LOG]'):
         """
@@ -96,7 +96,7 @@ class Logger(Subscriber):
 
     def on_sock_open(self):
         self.on_update_msg('Connected to %s' % self.client.address)
-        #self.on_update_msg('Token: %s' % self.client.token)
+        self.on_update_msg('Token: %s' % self.client.server_token)
 
     def on_world_rect(self, **kwargs):
         self.on_update_msg('World is from %(left)i:%(top)i to %(right)i:%(bottom)i' % kwargs)
@@ -141,14 +141,14 @@ class Logger(Subscriber):
         log = list(format_log(self.log_msgs, w.INFO_SIZE / log_char_w))
         num_log_lines = min(len(log), int(w.INFO_SIZE / log_line_h))
 
-        y_start = w.win_size.y - num_log_lines*log_line_h + 9
+        y_start = w.win_size.y - num_log_lines * log_line_h + 9
 
-        c.fill_rect((0, w.win_size.y - num_log_lines*log_line_h),
-                    size=(w.INFO_SIZE, num_log_lines*log_line_h),
+        c.fill_rect((0, w.win_size.y - num_log_lines * log_line_h),
+                    size=(w.INFO_SIZE, num_log_lines * log_line_h),
                     color=to_rgba(BLACK, .3))
 
         for i, text in enumerate(log[-num_log_lines:]):
-            c.draw_text((0, y_start + i*log_line_h), text,
+            c.draw_text((0, y_start + i * log_line_h), text,
                         align='left', size=10, face='monospace')
 
 
@@ -186,15 +186,18 @@ class KeyToggler(MultiSubscriber):
 
 class GtkControl(Subscriber):
     def __init__(self, address, token=None, nick=None):
-        if nick is None: nick = random.choice(special_names)
+        if nick is None:
+            nick = random.choice(special_names)
 
         # connect the subscribers
         # order is important, first subscriber gets called first
 
         self.multi_sub = MultiSubscriber(self)
+
         def key(keycode, *subs, disabled=False):
             # subscribe all these subscribers, toggle them when key is pressed
-            if isinstance(keycode, str): keycode = ord(keycode)
+            if isinstance(keycode, str):
+                keycode = ord(keycode)
             self.multi_sub.sub(KeyToggler(keycode, *subs, disabled=disabled))
 
         self.client = client = Client(self.multi_sub)
@@ -217,7 +220,7 @@ class GtkControl(Subscriber):
             CellMasses(),
             RemergeTimes(client),
             ForceFields(),
-        )
+            )
         key('m', MovementLines())
 
         # HUD
@@ -227,14 +230,18 @@ class GtkControl(Subscriber):
             ExperienceMeter(),
             Logger(client),
             MassGraph(client),
-        )
+            )
+
+        # Team Overlay
+        key('t', TeamOverlay(client))
+
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 
         client.player.nick = nick
         client.connect(address, token)
 
         # use AkiraYasha's Facebook token to start with more mass (> 43, lvl 56)
-        #self.client.send_facebook(
+        # self.client.send_facebook(
         #    'g2gDYQFtAAAAEKO6L3c8C8/eXtbtbVJDGU5tAAAAUvOo7JuWAVSczT5Aj0eo0CvpeU8ijGzKy/gXBVCxhP5UO+ERH0jWjAo9bU1V7dU0GmwFr+SnzqWohx3qvG8Fg8RHlL17/y9ifVWpYUdweuODb9c=')
         #print("Using AkiraYasha's Facebook token")
 
@@ -282,6 +289,7 @@ def main():
 
     if address and address[0] in 'Pp':
         address = get_party_address(token)
+        #token = None
 
     if not address:
         address, token, *_ = find_server()
