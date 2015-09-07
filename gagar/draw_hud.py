@@ -33,6 +33,7 @@ class TeamOverlay(Subscriber):
         # print("Sending current state!")
         if len(self.teamer.team_list) > 0:
             self.teamer.send_state_to_all(self.state)
+        self.teamer.check_conn_timeout()
         self.scheduler.enter(1, 1, self.send_state)
 
     def on_draw_hud(self, c, w):

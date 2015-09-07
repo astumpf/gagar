@@ -4,7 +4,7 @@ import threading
 import time
 
 PORT = 55555
-TIMEOUT = 5
+TIMEOUT = 2
 
 
 class State():
