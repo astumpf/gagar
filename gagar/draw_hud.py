@@ -1,5 +1,5 @@
 from collections import deque
-from time import time, sleep
+from time import time, sleep, monotonic
 import sched
 import threading
 
@@ -7,7 +7,10 @@ from agarnet.vec import Vec
 
 from .drawutils import *
 from .subscriber import Subscriber
-from .teamer import AgarioTeamer, State
+from .teamer import AgarioTeamer, State, Player
+
+TEAM_UPDATE_RATE = 0.1
+TEAM_OVERLAY_PADDING = 50
 
 
 class TeamOverlay(Subscriber):
@@ -18,10 +21,12 @@ class TeamOverlay(Subscriber):
         self.state = None
 
         self.scheduler = sched.scheduler(time, sleep)
-        self.scheduler.enter(0.1, 1, self.send_state)
+        self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
         thread = threading.Thread(target=self.scheduler.run)
         thread.setDaemon(True)
         thread.start()
+
+        #self._test()
 
     def get_state(self, world):
         x, y = world.player.center
@@ -31,10 +36,9 @@ class TeamOverlay(Subscriber):
 
     def send_state(self):
         # print("Sending current state!")
-        if len(self.teamer.team_list) > 0:
+        if len(self.teamer.team_list) > 0 and self.state is not None:
             self.teamer.send_state_to_all(self.state)
-        self.teamer.check_conn_timeout()
-        self.scheduler.enter(0.1, 1, self.send_state)
+        self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
 
     def on_draw_hud(self, c, w):
         state = self.get_state(w)
@@ -46,15 +50,41 @@ class TeamOverlay(Subscriber):
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
         for i, peer in enumerate(self.teamer.team_list.values()):
-            c.draw_text((10, 60 + 30 * i), peer.last_state.name + '(' + str(peer.last_state.mass) + ')' + ' (' + peer.last_state.server + ')',
-                        align='left', color=GRAY, outline=(BLACK, 2), size=18)
+            c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), peer.last_state.name,
+                        align='left', color=WHITE, outline=(BLACK, 2), size=18)
+
+            c.draw_text((10, 75 + TEAM_OVERLAY_PADDING * i), 'Mass: ' + str(peer.last_state.mass),
+                        align='left', color=GRAY, outline=(BLACK, 2), size=12)
+
+            c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), 'Server: ' + peer.last_state.server,
+                        align='left', color=GRAY, outline=(BLACK, 2), size=12)
 
             c.draw_line(w.world_to_screen_pos(w.player.center),
                         w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
-                        width=1, color=RED)
+                        width=2, color=GREEN)
 
-        # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
+        self.teamer.check_conn_timeout()
 
+            # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
+
+    def _test(self):
+        state1 = State("Peter", 100, 200, "NGTXH", 300)
+        player1 = Player(("192.168.2.1", 55555))
+        player1.check_timeout = False
+        player1.last_state = state1
+        player1.last_state_time = monotonic()
+        player1.online = True
+
+        self.teamer.team_list[("192.168.2.1", 55555)] = player1
+
+        state2 = State("Hans", -100, -200, "TTTTT", 1200)
+        player2 = Player(("192.168.2.2", 55555))
+        player2.check_timeout = False
+        player2.last_state = state2
+        player2.last_state_time = monotonic()
+        player2.online = True
+
+        self.teamer.team_list[("192.168.2.2", 55555)] = player2
 
 
 class Minimap(Subscriber):

@@ -39,6 +39,8 @@ class NativeControl(Subscriber):
         elif button == 3:  # Right click
             self.send_mouse()
             self.client.send_split()
+        elif button == 1:
+            pass #print("Left mouse click")
 
     def on_key_pressed(self, val, char):
         if char == 'w':

@@ -71,13 +71,13 @@ class AgarioTeamer():
         self.socket.sendto(state.to_data(), address)
 
     def send_state_to_all(self, state):
-        for address in self.team_list:
+        for address in [online for online in self.team_list if self.team_list[online].online is True]:
             self.send_state_to(address, state)
 
     def check_conn_timeout(self):
         for player in list(self.team_list.values()):
             diff = time.monotonic() - player.last_state_time
-            if player.last_state_time is None or diff > TIMEOUT:
+            if (player.last_state_time is None or diff > TIMEOUT) and player.online is True:
                 if player.check_timeout:
                     print("Player", player.address, "timed out. Inactive for", diff, "seconds.")
                     del self.team_list[player.address]
