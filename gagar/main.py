@@ -18,6 +18,11 @@ class NativeControl(Subscriber):
     def __init__(self, client):
         self.client = client
         self.movement_delta = Vec()
+        self.sending_mouse = True
+
+    def toggle_sending_mouse(self):
+        print("Toggle send mouse")
+        self.sending_mouse = not self.sending_mouse
 
     def send_mouse(self):
         if self.client.player.is_alive:
@@ -26,11 +31,13 @@ class NativeControl(Subscriber):
 
     def on_world_update_post(self):
         # keep cells moving even when mouse stands still
-        self.send_mouse()
+        if self.sending_mouse:
+            self.send_mouse()
 
     def on_mouse_moved(self, pos, pos_world):
         self.movement_delta = pos_world - self.client.player.center
-        self.send_mouse()
+        if self.sending_mouse:
+            self.send_mouse()
 
     def on_mouse_pressed(self, button):
         if button == 2:  # Middle click
@@ -39,8 +46,6 @@ class NativeControl(Subscriber):
         elif button == 3:  # Right click
             self.send_mouse()
             self.client.send_split()
-        elif button == 1:
-            pass #print("Left mouse click")
 
     def on_key_pressed(self, val, char):
         if char == 'w':
@@ -204,7 +209,8 @@ class GtkControl(Subscriber):
 
         self.client = client = Client(self.multi_sub)
 
-        self.multi_sub.sub(NativeControl(client))
+        self.native_control = NativeControl(client)
+        self.multi_sub.sub(self.native_control)
 
         # background
         key(Gdk.KEY_F2, SolidBackground())
@@ -257,6 +263,8 @@ class GtkControl(Subscriber):
         self.world_viewer.drawing_area.queue_draw()
 
     def on_key_pressed(self, val, char):
+        if val == Gdk.KEY_Tab:
+            self.native_control.toggle_sending_mouse()
         if char == 'q' or val == Gdk.KEY_Escape:
             self.client.disconnect()
             Gtk.main_quit()

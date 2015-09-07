@@ -2,6 +2,7 @@ from collections import deque
 from time import time, sleep, monotonic
 import sched
 import threading
+from agarnet.utils import get_party_address
 
 from agarnet.vec import Vec
 
@@ -28,10 +29,14 @@ class TeamOverlay(Subscriber):
 
         #self._test()
 
+        self.mouse_pos = None
+        self.buttons = []
+
     def get_state(self, world):
         x, y = world.player.center
         token = self.client.server_token if len(self.client.server_token) == 5 else 'FFA'
         state = State(world.player.nick, x, y, token, world.player.total_mass)
+
         return state
 
     def send_state(self):
@@ -46,29 +51,55 @@ class TeamOverlay(Subscriber):
             self.teamer.send_discover(state)
         self.state = state
 
+        self.buttons = []
+
         c.draw_text((10, 30), 'Team',
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
         for i, peer in enumerate(self.teamer.team_list.values()):
             c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), peer.last_state.name,
                         align='left', color=WHITE, outline=(BLACK, 2), size=18)
+            if peer.last_state.mass > 0:
+                mass_color = GRAY
+                mass_text = 'Mass: ' + str(peer.last_state.mass)
+            else:
+                mass_text = 'Dead'
+                mass_color = RED
+            c.draw_text((10, 75 + TEAM_OVERLAY_PADDING * i), mass_text,
+                        align='left', color=mass_color, outline=(BLACK, 2), size=12)
 
-            c.draw_text((10, 75 + TEAM_OVERLAY_PADDING * i), 'Mass: ' + str(peer.last_state.mass),
+            c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), '#' + peer.last_state.server,
                         align='left', color=GRAY, outline=(BLACK, 2), size=12)
-
-            c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), 'Server: ' + peer.last_state.server,
-                        align='left', color=GRAY, outline=(BLACK, 2), size=12)
-
-            c.draw_line(w.world_to_screen_pos(w.player.center),
-                        w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
-                        width=2, color=GREEN)
+            button = Button(90, 75 - 12 + TEAM_OVERLAY_PADDING * i, 50, 25, "JOIN")
+            button.id = peer
+            if self.mouse_pos is not None and button.contains_point(self.mouse_pos):
+                button.highlight = True
+            self.buttons.append(c.draw_button(button))
+            if self.client.player.is_alive:
+                c.draw_line(w.world_to_screen_pos(w.player.center),
+                            w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
+                            width=2, color=GREEN)
 
         self.teamer.check_conn_timeout()
 
-            # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
+        # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
+
+    def on_mouse_moved(self, pos, pos_world):
+        self.mouse_pos = pos
+
+    def on_mouse_pressed(self, button):
+        if button == 1:
+            for button in self.buttons[:]:
+                if button.highlight:
+                    player = button.id
+                    print("Joining player", player.last_state.name)
+                    self.client.disconnect()
+                    token = player.last_state.server
+                    address = get_party_address(token)
+                    self.client.connect(address, token)
 
     def _test(self):
-        state1 = State("Peter", 100, 200, "NGTXH", 300)
+        state1 = State("Peter", 100, 200, "R38BQ", 0)
         player1 = Player(("192.168.2.1", 55555))
         player1.check_timeout = False
         player1.last_state = state1

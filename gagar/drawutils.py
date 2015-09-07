@@ -1,22 +1,22 @@
 TWOPI = 6.28318530717958
 
-BLACK = (0,0,0)
-WHITE = (1,1,1)
-GRAY = (.5,)*3
-DARK_GRAY = (.2,)*3
-LIGHT_GRAY = (.7,)*3
+BLACK = (0, 0, 0)
+WHITE = (1, 1, 1)
+GRAY = (.5,) * 3
+DARK_GRAY = (.2,) * 3
+LIGHT_GRAY = (.7,) * 3
 
-RED = (1,0,0)
-GREEN = (0,1,0)
-BLUE = (0,0,1)
-YELLOW = (1,1,0)
-TURQUOISE = (0,1,1)
-FUCHSIA = (1,0,1)
+RED = (1, 0, 0)
+GREEN = (0, 1, 0)
+BLUE = (0, 0, 1)
+YELLOW = (1, 1, 0)
+TURQUOISE = (0, 1, 1)
+FUCHSIA = (1, 0, 1)
 
-ORANGE = (1,.5,0)
-PURPLE = (.5,0,1)
-LIGHT_GREEN = (.5,1,.5)
-LIGHT_BLUE = (.5,.5,1)
+ORANGE = (1, .5, 0)
+PURPLE = (.5, 0, 1)
+LIGHT_GREEN = (.5, 1, .5)
+LIGHT_BLUE = (.5, .5, 1)
 
 
 def frange(start, end, step):
@@ -28,6 +28,28 @@ def frange(start, end, step):
 
 def to_rgba(c, a):
     return c[0], c[1], c[2], a
+
+
+class Button():
+    def __init__(self, x, y, width, height, text=""):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.text = text
+
+        self.border = True
+        self.border_color = BLACK
+        self.fill = True
+        self.fill_color = GRAY
+        self.text_color = BLACK
+        self.text_size = 12
+
+        self.highlight = False
+        self.highlight_color = LIGHT_GRAY
+
+    def contains_point(self, vec):
+        return self.x <= vec.x <= self.x + self.width and self.y <= vec.y <= self.y + self.height
 
 
 class Canvas(object):
@@ -102,7 +124,8 @@ class Canvas(object):
     def fill_circle(self, pos, radius, color=None):
         c = self._cairo_context
         x, y = pos
-        if color: c.set_source_rgba(*color)
+        if color:
+            c.set_source_rgba(*color)
         c.new_sub_path()
         c.arc(x, y, radius, 0, TWOPI)
         c.fill()
@@ -110,8 +133,10 @@ class Canvas(object):
     def stroke_circle(self, pos, radius, width=None, color=None):
         c = self._cairo_context
         x, y = pos
-        if width: c.set_line_width(width)
-        if color: c.set_source_rgba(*color)
+        if width:
+            c.set_line_width(width)
+        if color:
+            c.set_source_rgba(*color)
         c.new_sub_path()
         c.arc(x, y, radius, 0, TWOPI)
         c.stroke()
@@ -119,7 +144,8 @@ class Canvas(object):
     def fill_rect(self, left_top, right_bottom=None, size=None, color=None):
         c = self._cairo_context
         left, top = left_top
-        if color: c.set_source_rgba(*color)
+        if color:
+            c.set_source_rgba(*color)
         if right_bottom:
             right, bottom = right_bottom
             c.rectangle(left, top, right - left, bottom - top)
@@ -128,11 +154,13 @@ class Canvas(object):
         c.fill()
 
     def stroke_rect(self, left_top, right_bottom=None, size=None,
-                          width=None, color=None):
+                    width=None, color=None):
         c = self._cairo_context
         left, top = left_top
-        if width: c.set_line_width(width)
-        if color: c.set_source_rgba(*color)
+        if width:
+            c.set_line_width(width)
+        if color:
+            c.set_source_rgba(*color)
         if right_bottom:
             right, bottom = right_bottom
             c.rectangle(left, top, right - left, bottom - top)
@@ -142,8 +170,10 @@ class Canvas(object):
 
     def draw_line(self, start, *points, relative=None, width=None, color=None):
         c = self._cairo_context
-        if width: c.set_line_width(width)
-        if color: c.set_source_rgba(*color)
+        if width:
+            c.set_line_width(width)
+        if color:
+            c.set_source_rgba(*color)
         c.move_to(*start)
         if relative:
             c.rel_line_to(*relative)
@@ -154,7 +184,8 @@ class Canvas(object):
 
     def fill_polygon(self, start, *points, color=None):
         c = self._cairo_context
-        if color: c.set_source_rgba(*color)
+        if color:
+            c.set_source_rgba(*color)
         c.move_to(*start)
         for point in points:
             c.line_to(*point)
@@ -164,3 +195,21 @@ class Canvas(object):
         c = self._cairo_context
         c.set_source_rgba(*color)
         c.paint()
+
+    def draw_button(self, button):
+        if button.fill:
+            if button.highlight:
+                fill_color = button.highlight_color
+            else:
+                fill_color = button.fill_color
+            self.fill_rect((button.x, button.y), size=(button.width, button.height), color=fill_color)
+        if button.border:
+            self.stroke_rect((button.x, button.y), size=(button.width, button.height), color=button.border_color)
+
+        if len(button.text) > 0:
+            self.draw_text((button.x + int(button.width / 2), button.y + int((button.height) / 2)),
+                           button.text, button.text_size, anchor_x='center', anchor_y='center', color=button.text_color)
+
+        return button
+
+
