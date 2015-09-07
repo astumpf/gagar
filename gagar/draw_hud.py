@@ -18,7 +18,7 @@ class TeamOverlay(Subscriber):
         self.state = None
 
         self.scheduler = sched.scheduler(time, sleep)
-        self.scheduler.enter(1, 1, self.send_state)
+        self.scheduler.enter(0.1, 1, self.send_state)
         thread = threading.Thread(target=self.scheduler.run)
         thread.setDaemon(True)
         thread.start()
@@ -33,7 +33,7 @@ class TeamOverlay(Subscriber):
         # print("Sending current state!")
         if len(self.teamer.team_list) > 0:
             self.teamer.send_state_to_all(self.state)
-        self.scheduler.enter(1, 1, self.send_state)
+        self.scheduler.enter(0.1, 1, self.send_state)
 
     def on_draw_hud(self, c, w):
         state = self.get_state(w)
