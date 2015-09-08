@@ -256,7 +256,7 @@ class GtkControl(Subscriber):
         gtk_watch_client(client)
 
         self.world_viewer = wv = WorldViewer(client.world)
-        wv.draw_subscriber = wv.input_subscriber = self.multi_sub
+        wv.button_subscriber = wv.draw_subscriber = wv.input_subscriber = self.multi_sub
         wv.focus_player(client.player)
 
     def on_world_update_post(self):

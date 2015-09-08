@@ -29,9 +29,6 @@ class TeamOverlay(Subscriber):
 
         #self._test()
 
-        self.mouse_pos = None
-        self.buttons = []
-
     def get_state(self, world):
         x, y = world.player.center
         token = self.client.server_token if len(self.client.server_token) == 5 else 'FFA'
@@ -50,8 +47,6 @@ class TeamOverlay(Subscriber):
         if self.state is None:
             self.teamer.send_discover(state)
         self.state = state
-
-        self.buttons = []
 
         c.draw_text((10, 30), 'Team',
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
@@ -72,9 +67,8 @@ class TeamOverlay(Subscriber):
                         align='left', color=GRAY, outline=(BLACK, 2), size=12)
             button = Button(90, 75 - 12 + TEAM_OVERLAY_PADDING * i, 50, 25, "JOIN")
             button.id = peer
-            if self.mouse_pos is not None and button.contains_point(self.mouse_pos):
-                button.highlight = True
-            self.buttons.append(c.draw_button(button))
+            w.register_button(button)
+            c.draw_button(button)
             if self.client.player.is_alive:
                 c.draw_line(w.world_to_screen_pos(w.player.center),
                             w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
@@ -84,19 +78,16 @@ class TeamOverlay(Subscriber):
 
         # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
 
-    def on_mouse_moved(self, pos, pos_world):
-        self.mouse_pos = pos
+    def on_button_hover(self, button, pos):
+        button.highlight = True
 
-    def on_mouse_pressed(self, button):
-        if button == 1:
-            for button in self.buttons[:]:
-                if button.highlight:
-                    player = button.id
-                    print("Joining player", player.last_state.name)
-                    self.client.disconnect()
-                    token = player.last_state.server
-                    address = get_party_address(token)
-                    self.client.connect(address, token)
+    def on_button_pressed(self, button, pos):
+        player = button.id
+        print("Joining player", player.last_state.name)
+        self.client.disconnect()
+        token = player.last_state.server
+        address = get_party_address(token)
+        self.client.connect(address, token)
 
     def _test(self):
         state1 = State("Peter", 100, 200, "R38BQ", 0)

@@ -22,6 +22,9 @@ class WorldViewer(object):
         self.input_subscriber = None
         # same for draw_background, draw_cells, draw_hud
         self.draw_subscriber = None
+        self.button_subscriber = None
+
+        self.buttons = []
 
         self.win_size = Vec(1000, 1000 * 9 / 16)
         self.screen_center = self.win_size / 2
@@ -81,8 +84,18 @@ class WorldViewer(object):
 
     def mouse_pressed(self, _, event):
         """Called by GTK. Set input_subscriber to handle this."""
-        if not self.input_subscriber: return
+        if not self.input_subscriber:
+            return
         self.input_subscriber.on_mouse_pressed(button=event.button)
+        if event.button == 1:
+            for button in self.buttons:
+                if button.contains_point(self.mouse_pos):
+                    self.button_subscriber.on_button_pressed(button, self.mouse_pos)
+
+    def register_button(self, button):
+        self.buttons.append(button)
+        if button.contains_point(self.mouse_pos):
+            self.button_subscriber.on_button_hover(button, self.mouse_pos)
 
     def world_to_screen_pos(self, world_pos):
         return (world_pos - self.world_center) \
@@ -114,6 +127,7 @@ class WorldViewer(object):
             self.world_center = Vec(0, 0)
 
     def draw(self, widget, cairo_context):
+        self.buttons = []
         c = Canvas(cairo_context)
         if self.draw_subscriber:
             self.recalculate()
