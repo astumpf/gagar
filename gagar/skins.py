@@ -37,7 +37,8 @@ skin_surface_cache = {}
 
 
 class CellSkins(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         c = c._cairo_context
         for cell in w.world.cells.values():
             name = cell.name.lower()

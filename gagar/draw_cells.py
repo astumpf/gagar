@@ -12,7 +12,8 @@ def nick_size(cell, w):
 
 
 class CellsDrawer(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
             pos = w.world_to_screen_pos(cell.pos)
@@ -21,7 +22,8 @@ class CellsDrawer(Subscriber):
 
 
 class CellNames(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         for cell in w.world.cells.values():
             if cell.name:
                 pos = w.world_to_screen_pos(cell.pos)
@@ -44,10 +46,14 @@ class RemergeTimes(Subscriber):
             return  # dead or only one cell, no re-merge time to display
         now = time()
         for cell in player.own_cells:
-            split_for = now - self.split_times[cell.cid]
+            try:
+                split_for = now - self.split_times[cell.cid]
+            except KeyError:
+                continue
             # formula by DebugMonkey
-            ttr = player.total_mass / 1000 * 0.02333 + 30 - split_for
-            if ttr < 0: continue
+            ttr = player.total_mass * 0.02 + 30 - split_for
+            if ttr < 0:
+                continue
             pos = w.world_to_screen_pos(cell.pos)
             pos.isub(Vec(0, (info_size + nick_size(cell, w)) / 2))
             c.draw_text(pos, 'TTR %.1fs' % ttr,
@@ -55,7 +61,8 @@ class RemergeTimes(Subscriber):
 
 
 class CellMasses(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         for cell in w.world.cells.values():
             if cell.is_food or cell.is_ejected_mass:
                 continue
@@ -67,8 +74,10 @@ class CellMasses(Subscriber):
 
 
 class CellHostility(Subscriber):
-    def on_draw_cells(self, c, w):
-        if not w.player.is_alive: return  # nothing to be hostile against
+    @staticmethod
+    def on_draw_cells(c, w):
+        if not w.player.is_alive:
+            return  # nothing to be hostile against
         own_min_mass = min(c.mass for c in w.player.own_cells)
         own_max_mass = max(c.mass for c in w.player.own_cells)
         for cell in w.world.cells.values():
@@ -83,20 +92,21 @@ class CellHostility(Subscriber):
                     color = RED
                 else:
                     continue  # no threat, do not mark
-            elif own_min_mass > cell.mass * 1.25 * 2:
+            elif own_min_mass > cell.mass * 1.3 * 2:
                 color = PURPLE
-            elif own_min_mass > cell.mass * 1.25:
+            elif own_min_mass > cell.mass * 1.3:
                 color = GREEN
-            elif cell.mass > own_min_mass * 1.25 * 2:
+            elif cell.mass > own_min_mass * 1.3 * 2:
                 color = RED
-            elif cell.mass > own_min_mass * 1.25:
+            elif cell.mass > own_min_mass * 1.3:
                 color = ORANGE
             c.stroke_circle(pos, w.world_to_screen_size(cell.size),
                             width=5, color=color)
 
 
 class ForceFields(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         split_dist = 760
         for cell in w.player.own_cells:
             pos = w.world_to_screen_pos(cell.pos)
@@ -127,7 +137,8 @@ class ForceFields(Subscriber):
 
 
 class MovementLines(Subscriber):
-    def on_draw_cells(self, c, w):
+    @staticmethod
+    def on_draw_cells(c, w):
         for cell in w.player.own_cells:
             c.draw_line(w.world_to_screen_pos(cell.pos), w.mouse_pos,
                         width=1, color=to_rgba(BLACK, .3))

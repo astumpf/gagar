@@ -4,7 +4,7 @@ import sys
 from gi.repository import Gtk, GLib, Gdk
 
 from agarnet.client import Client
-from agarnet.utils import special_names, get_party_address, find_server
+from agarnet.utils import special_names, find_server
 from .draw_hud import *
 from .draw_cells import *
 from .draw_background import *
@@ -12,6 +12,7 @@ from .drawutils import *
 from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
 from .window import WorldViewer
+import threading
 
 
 class NativeControl(Subscriber):
@@ -27,7 +28,19 @@ class NativeControl(Subscriber):
     def send_mouse(self):
         if self.client.player.is_alive:
             target = self.client.player.center + self.movement_delta
-            self.client.send_target(*target)
+            thread = threading.Thread(target=self.client.send_target, args=target)
+            thread.setDaemon(True)
+            thread.start()
+
+    def send_shoot(self):
+        thread = threading.Thread(target=self.client.send_shoot)
+        thread.setDaemon(True)
+        thread.start()
+
+    def send_split(self):
+        thread = threading.Thread(target=self.client.send_split)
+        thread.setDaemon(True)
+        thread.start()
 
     def on_world_update_post(self):
         # keep cells moving even when mouse stands still
@@ -42,18 +55,18 @@ class NativeControl(Subscriber):
     def on_mouse_pressed(self, button):
         if button == 2:  # Middle click
             self.send_mouse()
-            self.client.send_shoot()
+            self.send_shoot()
         elif button == 3:  # Right click
             self.send_mouse()
-            self.client.send_split()
+            self.send_split()
 
     def on_key_pressed(self, val, char):
         if char == 'w':
             self.send_mouse()
-            self.client.send_shoot()
+            self.send_shoot()
         elif val == Gdk.KEY_space:
             self.send_mouse()
-            self.client.send_split()
+            self.send_split()
             # elif char == 'k':
             # self.client.send_explode()
 
@@ -246,7 +259,18 @@ class GtkControl(Subscriber):
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 
         client.player.nick = nick
-        client.connect(address, token)
+
+        connected = False
+        while not connected:
+            try:
+                client.connect(address, token)
+            except ConnectionResetError as e:
+                print("Error while connecting:", e)
+                print("Trying again...")
+                client.disconnect()
+                continue
+            connected = True
+
 
         # use AkiraYasha's Facebook token to start with more mass (> 43, lvl 56)
         # self.client.send_facebook(
@@ -299,7 +323,6 @@ def main():
 
     if address and address[0] in 'Pp':
         address = get_party_address(token)
-        #token = None
 
     if not address:
         address, token, *_ = find_server()

@@ -4,6 +4,8 @@ from agarnet.vec import Vec
 from .drawutils import Canvas
 import time
 
+import threading
+
 
 class WorldViewer(object):
     """
@@ -49,6 +51,14 @@ class WorldViewer(object):
         self.drawing_area.connect('draw', self.draw)
 
         window.show_all()
+        draw_thread = threading.Thread(target=self.draw_loop)
+        draw_thread.daemon = True
+        draw_thread.start()
+
+    def draw_loop(self):
+        while True:
+            self.drawing_area.queue_draw()
+            time.sleep(0.033)
 
     def focus_player(self, player):
         """Follow this client regarding center and zoom."""
@@ -128,8 +138,6 @@ class WorldViewer(object):
             self.world_center = Vec(0, 0)
 
     def draw(self, widget, cairo_context):
-        # t = Timer()
-        # t.start()
         self.buttons = []
         c = Canvas(cairo_context)
         if self.draw_subscriber:
@@ -137,7 +145,6 @@ class WorldViewer(object):
             self.draw_subscriber.on_draw_background(c, self)
             self.draw_subscriber.on_draw_cells(c, self)
             self.draw_subscriber.on_draw_hud(c, self)
-        # t.stop()
 
 
 class Timer:

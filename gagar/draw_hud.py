@@ -8,7 +8,7 @@ from agarnet.vec import Vec
 
 from .drawutils import *
 from .subscriber import Subscriber
-from .teamer import AgarioTeamer, State, Player
+from .teamer import AgarioTeamer, State
 
 TEAM_UPDATE_RATE = 0.1
 TEAM_OVERLAY_PADDING = 50
