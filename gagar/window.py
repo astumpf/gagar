@@ -2,6 +2,7 @@ from gi.repository import Gtk, Gdk
 
 from agarnet.vec import Vec
 from .drawutils import Canvas
+import time
 
 
 class WorldViewer(object):
@@ -127,6 +128,8 @@ class WorldViewer(object):
             self.world_center = Vec(0, 0)
 
     def draw(self, widget, cairo_context):
+        # t = Timer()
+        # t.start()
         self.buttons = []
         c = Canvas(cairo_context)
         if self.draw_subscriber:
@@ -134,3 +137,30 @@ class WorldViewer(object):
             self.draw_subscriber.on_draw_background(c, self)
             self.draw_subscriber.on_draw_cells(c, self)
             self.draw_subscriber.on_draw_hud(c, self)
+        # t.stop()
+
+
+class Timer:
+    measurements = dict()
+
+    def __init__(self):
+        self.start_time = None
+        self.counter = 1
+
+    def start(self):
+        self.start_time = time.monotonic()
+
+    def stop(self):
+        duration = time.monotonic() - self.start_time
+        print("Measurement", self.counter, ":", duration)
+        if self.counter in Timer.measurements:
+            Timer.measurements[self.counter].append(duration)
+        else:
+            Timer.measurements[self.counter] = [duration]
+        self.counter += 1
+
+    def __del__(self):
+        print("Timer Statistics:")
+        for m in Timer.measurements:
+            print("Measurement", m, "count:", len(Timer.measurements[m]), "average:",
+                  sum(Timer.measurements[m]) / len(Timer.measurements[m]), "max:", max(Timer.measurements[m]))

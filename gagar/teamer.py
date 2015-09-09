@@ -62,13 +62,17 @@ class AgarioTeamer():
         player = Player((ip, PORT))
         player.check_timeout = False
         self.team_list[(ip, PORT)] = player
+        return player
 
     def send_discover(self, state):
         print("Sending discover with state:", state)
         self.send_state_to(("<broadcast>", PORT), state)
 
     def send_state_to(self, address, state):
-        self.socket.sendto(state.to_data(), address)
+        try:
+            self.socket.sendto(state.to_data(), address)
+        except socket.gaierror as e:
+            print("Error while sending state:", e)
 
     def send_state_to_all(self, state):
         for address in [online for online in self.team_list if self.team_list[online].online is True]:
@@ -86,13 +90,7 @@ class AgarioTeamer():
                     player.online = False
 
     def _received_new_state(self, source_addr, data):
-        try:
-            host_name = socket.gethostbyaddr(source_addr[0])[0]
-        except socket.herror:
-            host_name = source_addr[0]
-        addr_tuple = (host_name, source_addr[1])
-        if host_name in (self.local_ip, "127.0.0.1", "localhost", socket.gethostname()):
-            pass
+        if source_addr[0] in (self.local_ip, "127.0.0.1", "localhost", socket.gethostname()):
             print("Ignored data from own socket.")
             return
         state = State.from_data(data)
@@ -100,10 +98,10 @@ class AgarioTeamer():
             print("Received invalid data")
             return
         # print("Received new state:", source_addr, data)
-        if addr_tuple not in self.team_list:
-            print("Found new player:", addr_tuple)
-            self.team_list[addr_tuple] = Player(addr_tuple)
-        player = self.team_list[addr_tuple]
+        if source_addr not in self.team_list:
+            print("Found new player:", source_addr)
+            self.team_list[source_addr] = Player(source_addr)
+        player = self.team_list[source_addr]
         player.last_state = state
         player.last_state_time = time.monotonic()
         player.online = True

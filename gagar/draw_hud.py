@@ -27,7 +27,7 @@ class TeamOverlay(Subscriber):
         thread.setDaemon(True)
         thread.start()
 
-        #self._test()
+        # self._test()
 
     def get_state(self, world):
         x, y = world.player.center
@@ -51,7 +51,7 @@ class TeamOverlay(Subscriber):
         c.draw_text((10, 30), 'Team',
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
-        for i, peer in enumerate(self.teamer.team_list.values()):
+        for i, peer in enumerate(list(self.teamer.team_list.values())):
             c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), peer.last_state.name,
                         align='left', color=WHITE, outline=(BLACK, 2), size=18)
             if peer.last_state.mass > 0:
@@ -91,22 +91,17 @@ class TeamOverlay(Subscriber):
 
     def _test(self):
         state1 = State("Peter", 100, 200, "R38BQ", 0)
-        player1 = Player(("192.168.2.1", 55555))
-        player1.check_timeout = False
+        player1 = self.teamer.add_player("peter-computer")
         player1.last_state = state1
         player1.last_state_time = monotonic()
         player1.online = True
 
-        self.teamer.team_list[("192.168.2.1", 55555)] = player1
-
         state2 = State("Hans", -100, -200, "TTTTT", 1200)
-        player2 = Player(("192.168.2.2", 55555))
-        player2.check_timeout = False
+        player2 = self.teamer.add_player("192.168.2.2")
         player2.last_state = state2
         player2.last_state_time = monotonic()
         player2.online = True
 
-        self.teamer.team_list[("192.168.2.2", 55555)] = player2
 
 
 class Minimap(Subscriber):

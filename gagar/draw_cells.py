@@ -41,16 +41,16 @@ class RemergeTimes(Subscriber):
     def on_draw_cells(self, c, w):
         player = self.client.player
         if len(player.own_ids) <= 1:
-            return  # dead or only one cell, no remerge time to display
+            return  # dead or only one cell, no re-merge time to display
         now = time()
         for cell in player.own_cells:
             split_for = now - self.split_times[cell.cid]
             # formula by DebugMonkey
-            ttr = (player.total_mass * 20 + 30000) / 1000 - split_for
+            ttr = player.total_mass / 1000 * 0.02333 + 30 - split_for
             if ttr < 0: continue
             pos = w.world_to_screen_pos(cell.pos)
             pos.isub(Vec(0, (info_size + nick_size(cell, w)) / 2))
-            c.draw_text(pos, 'TTR %.1fs after %.1fs' % (ttr, split_for),
+            c.draw_text(pos, 'TTR %.1fs' % ttr,
                         align='center', outline=(BLACK, 2), size=info_size)
 
 
