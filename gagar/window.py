@@ -1,7 +1,7 @@
 from gi.repository import Gtk, Gdk
 
 from agarnet.vec import Vec
-from .drawutils import Canvas
+from .drawutils import *
 
 
 class WorldViewer(object):
@@ -98,13 +98,21 @@ class WorldViewer(object):
         self.win_size.set(alloc.width, alloc.height)
         self.screen_center = self.win_size / 2
         if self.player:  # any client is focused
-            window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
-            self.screen_scale = self.player.scale * window_scale
-            self.world_center = self.player.center
+            if self.player.is_alive or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
+                window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
+                self.screen_scale = lerp_smoothing(self.screen_scale, self.player.scale * window_scale, 0.1, 0.001)
+
+            smoothing_factor = 0.1
+            if self.player.is_alive:
+                smoothing_factor = 0.3
+
+            self.world_center.x = lerp_smoothing(self.world_center.x, self.player.center.x, smoothing_factor, 0.01)
+            self.world_center.y = lerp_smoothing(self.world_center.y, self.player.center.y, smoothing_factor, 0.01)
+
             self.world = self.player.world
         elif self.world.size:
-            self.screen_scale = min(self.win_size.x / self.world.size.x,
-                                    self.win_size.y / self.world.size.y)
+            new_scale = min(self.win_size.x / self.world.size.x, self.win_size.y / self.world.size.y)
+            self.screen_scale = lerp_smoothing(self.screen_scale, new_scale, 0.1, 0.001)
             self.world_center = self.world.center
         else:
             # happens when the window gets drawn before the world got updated
