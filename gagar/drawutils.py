@@ -19,6 +19,14 @@ LIGHT_GREEN = (.5, 1, .5)
 LIGHT_BLUE = (.5, .5, 1)
 
 
+def lerp_smoothing(cur, new, smooth_factor, min_diff=1):
+    diff = new - cur
+    if abs(diff) > min_diff:
+        return cur + diff * smooth_factor
+    else:
+        return new
+
+
 def frange(start, end, step):
     """same as range(), but allows using floats"""
     while start < end:

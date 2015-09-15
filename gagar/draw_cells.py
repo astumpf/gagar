@@ -8,7 +8,7 @@ info_size = 14
 
 
 def nick_size(cell, w):
-    return max(14, w.world_to_screen_size(.3 * cell.size))
+    return max(14, w.world_to_screen_size(.3 * cell.draw_size))
 
 
 class CellsDrawer(Subscriber):
@@ -16,7 +16,7 @@ class CellsDrawer(Subscriber):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
             pos = w.world_to_screen_pos(cell.pos)
-            c.fill_circle(pos, w.world_to_screen_size(cell.size),
+            c.fill_circle(pos, w.world_to_screen_size(cell.draw_size),
                           color=to_rgba(cell.color, .8))
 
 
@@ -96,7 +96,7 @@ class CellHostility(Subscriber):
                 color = RED
             elif cell.mass > own_min_mass * 1.33:
                 color = ORANGE
-            c.stroke_circle(pos, w.world_to_screen_size(cell.size),
+            c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
                             width=5, color=color)
 
 
@@ -126,7 +126,7 @@ class ForceFields(Subscriber):
                     c.stroke_circle(pos, w.world_to_screen_size(own_max_size),
                                     width=3, color=to_rgba(RED, .5))
             elif cell.mass > own_min_mass * 1.33 * 2:  # can split+kill me
-                radius = max(split_dist + cell.size * .7071, cell.size)
+                radius = max(split_dist + cell.draw_size * .7071, cell.draw_size)
                 c.stroke_circle(pos, w.world_to_screen_size(radius),
                                 width=3, color=to_rgba(RED, .5))
 
