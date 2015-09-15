@@ -85,11 +85,11 @@ class CellHostility(Subscriber):
                     continue  # no threat, do not mark
             elif own_min_mass > cell.mass * 1.33 * 2:
                 color = PURPLE
-            elif own_min_mass > cell.mass * 1.10:
+            elif own_min_mass > cell.mass * 1.33:
                 color = GREEN
             elif cell.mass > own_min_mass * 1.33 * 2:
                 color = RED
-            elif cell.mass > own_min_mass * 1.10:
+            elif cell.mass > own_min_mass * 1.33:
                 color = ORANGE
             c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
                             width=5, color=color)
