@@ -204,8 +204,8 @@ class GtkControl(Subscriber):
         self.multi_sub.sub(NativeControl(client))
 
         # background
-        key(Gdk.KEY_F2, SolidBackground())
-        key(Gdk.KEY_F2, SolidBackground(WHITE), disabled=True)
+        key(Gdk.KEY_F2, SolidBackground(), disabled=True)
+        key(Gdk.KEY_F2, SolidBackground(WHITE))
         key('b', WorldBorderDrawer())
         key('g', GridDrawer())
 
