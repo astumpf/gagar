@@ -76,9 +76,8 @@ class TeamOverlay(Subscriber):
 
         self.teamer.check_conn_timeout()
 
-        # print('Nick:', w.player.nick, 'Current mass:', w.player.total_mass, 'Pos:', x, '|', y, 'Token:', self.client.server_token)
-
-    def on_button_hover(self, button, pos):
+    @staticmethod
+    def on_button_hover(button, pos):
         button.highlight = True
 
     def on_button_pressed(self, button, pos):
@@ -103,9 +102,9 @@ class TeamOverlay(Subscriber):
         player2.online = True
 
 
-
 class Minimap(Subscriber):
-    def on_draw_hud(self, c, w):
+    @staticmethod
+    def on_draw_hud(c, w):
         if w.world.size:
             minimap_w = w.win_size.x / 5
             minimap_size = Vec(minimap_w, minimap_w)
@@ -132,7 +131,8 @@ class Minimap(Subscriber):
 
 
 class Leaderboard(Subscriber):
-    def on_draw_hud(self, c, w):
+    @staticmethod
+    def on_draw_hud(c, w):
         c.draw_text((w.win_size.x - 10, 30), 'Leaderboard',
                     align='right', color=WHITE, outline=(BLACK, 2), size=27)
 

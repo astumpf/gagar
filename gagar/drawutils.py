@@ -141,6 +141,9 @@ class Canvas(object):
         c.arc(x, y, radius, 0, TWOPI)
         c.stroke()
 
+    def set_pixel(self, pos, color=None):
+        self.fill_rect(pos, size=(4, 4), color=color)
+
     def fill_rect(self, left_top, right_bottom=None, size=None, color=None):
         c = self._cairo_context
         left, top = left_top

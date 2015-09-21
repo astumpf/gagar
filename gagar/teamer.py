@@ -52,7 +52,6 @@ class AgarioTeamer():
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.socket.bind(("", PORT))
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-        print("Local ip:", self.local_ip)
         self.team_list = dict()
 
         self.state_server = UDPServer(self._received_new_state, self.socket)
@@ -65,7 +64,7 @@ class AgarioTeamer():
         return player
 
     def send_discover(self, state):
-        print("Sending discover with state:", state)
+        # print("Sending discover with state:", state)
         self.send_state_to(("<broadcast>", PORT), state)
 
     def send_state_to(self, address, state):
@@ -91,7 +90,7 @@ class AgarioTeamer():
 
     def _received_new_state(self, source_addr, data):
         if source_addr[0] in (self.local_ip, "127.0.0.1", "localhost", socket.gethostname()):
-            print("Ignored data from own socket.")
+            # print("Ignored data from own socket.")
             return
         state = State.from_data(data)
         if state is None:
@@ -119,7 +118,6 @@ class UDPServer(threading.Thread):
             self.socket = sock
 
     def run(self):
-        print("Started UDP Server")
         while True:
             data, addr = self.socket.recvfrom(1024)
             if self.cb is not None:

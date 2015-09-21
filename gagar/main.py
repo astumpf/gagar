@@ -13,6 +13,7 @@ from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
 from .window import WorldViewer
 import threading
+from socket import gaierror
 
 
 class NativeControl(Subscriber):
@@ -225,6 +226,8 @@ class GtkControl(Subscriber):
         self.native_control = NativeControl(client)
         self.multi_sub.sub(self.native_control)
 
+        self.world_viewer = wv = WorldViewer(client.world)
+
         # background
         key(Gdk.KEY_F2, SolidBackground())
         key(Gdk.KEY_F2, SolidBackground(WHITE), disabled=True)
@@ -256,6 +259,7 @@ class GtkControl(Subscriber):
         # Team Overlay
         key('t', TeamOverlay(client))
 
+
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 
         client.player.nick = nick
@@ -269,6 +273,11 @@ class GtkControl(Subscriber):
                 print("Trying again...")
                 client.disconnect()
                 continue
+            except gaierror as e:
+                print("Can't connect to agario.io:", e)
+                print("Trying again...")
+                client.disconnect()
+                continue
             connected = True
 
 
@@ -279,12 +288,11 @@ class GtkControl(Subscriber):
 
         gtk_watch_client(client)
 
-        self.world_viewer = wv = WorldViewer(client.world)
         wv.button_subscriber = wv.draw_subscriber = wv.input_subscriber = self.multi_sub
         wv.focus_player(client.player)
 
     def on_world_update_post(self):
-        self.world_viewer.drawing_area.queue_draw()
+       pass# self.world_viewer.drawing_area.queue_draw()
 
     def on_key_pressed(self, val, char):
         if val == Gdk.KEY_Tab:

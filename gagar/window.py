@@ -58,7 +58,7 @@ class WorldViewer(object):
     def draw_loop(self):
         while True:
             self.drawing_area.queue_draw()
-            time.sleep(0.033)
+            time.sleep(0.03)
 
     def focus_player(self, player):
         """Follow this client regarding center and zoom."""
