@@ -240,7 +240,8 @@ class GtkControl(Subscriber):
         self.multi_sub.sub(CellsDrawer())
 
         # Gradient Bot
-        key('a', GradientBot(client, wv), disabled=True)
+        self.bot = GradientBot(client, wv)
+        key('a', self.bot, disabled=True)
 
         # cell overlay
         key('k', CellSkins())
@@ -286,11 +287,10 @@ class GtkControl(Subscriber):
                 continue
             connected = True
 
-
         # use AkiraYasha's Facebook token to start with more mass (> 43, lvl 56)
         # self.client.send_facebook(
         #    'g2gDYQFtAAAAEKO6L3c8C8/eXtbtbVJDGU5tAAAAUvOo7JuWAVSczT5Aj0eo0CvpeU8ijGzKy/gXBVCxhP5UO+ERH0jWjAo9bU1V7dU0GmwFr+SnzqWohx3qvG8Fg8RHlL17/y9ifVWpYUdweuODb9c=')
-        #print("Using AkiraYasha's Facebook token")
+        # print("Using AkiraYasha's Facebook token")
 
         gtk_watch_client(client)
 
@@ -303,7 +303,14 @@ class GtkControl(Subscriber):
     def on_key_pressed(self, val, char):
         if val == Gdk.KEY_Tab:
             self.native_control.toggle_sending_mouse()
-        if char == 'q' or val == Gdk.KEY_Escape:
+        elif char == 'y':
+            self.bot.toggle_bot()
+            self.native_control.toggle_sending_mouse()
+        elif char == '+':
+            self.bot.gradient_raster += 10
+        elif char == '-':
+            self.bot.gradient_raster -= 10
+        elif char == 'q' or val == Gdk.KEY_Escape:
             self.client.disconnect()
             Gtk.main_quit()
         elif char == 's':

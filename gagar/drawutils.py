@@ -46,7 +46,7 @@ def to_rgba(c, a):
     return c[0], c[1], c[2], a
 
 
-class Button():
+class Button:
     def __init__(self, x, y, width, height, text=""):
         self.x = x
         self.y = y
@@ -226,7 +226,7 @@ class Canvas(object):
             self.stroke_rect((button.x, button.y), size=(button.width, button.height), color=button.border_color)
 
         if len(button.text) > 0:
-            self.draw_text((button.x + int(button.width / 2), button.y + int((button.height) / 2)),
+            self.draw_text((button.x + int(button.width / 2), button.y + int(button.height / 2)),
                            button.text, button.text_size, anchor_x='center', anchor_y='center', color=button.text_color)
 
         return button
