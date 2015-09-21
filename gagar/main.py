@@ -12,6 +12,7 @@ from .drawutils import *
 from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
 from .window import WorldViewer
+from .bot import GradientBot
 import threading
 from socket import gaierror
 
@@ -237,6 +238,9 @@ class GtkControl(Subscriber):
         key('g', GridDrawer())
 
         self.multi_sub.sub(CellsDrawer())
+
+        # Gradient Bot
+        key('a', GradientBot(client, wv), disabled=True)
 
         # cell overlay
         key('k', CellSkins())
