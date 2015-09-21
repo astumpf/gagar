@@ -51,14 +51,14 @@ class WorldViewer(object):
         self.drawing_area.connect('draw', self.draw)
 
         window.show_all()
-        draw_thread = threading.Thread(target=self.draw_loop)
-        draw_thread.daemon = True
-        draw_thread.start()
+        #draw_thread = threading.Thread(target=self.draw_loop)
+        #draw_thread.daemon = True
+        #draw_thread.start()
 
     def draw_loop(self):
         while True:
             self.drawing_area.queue_draw()
-            time.sleep(0.03)
+            time.sleep(0.003)
 
     def focus_player(self, player):
         """Follow this client regarding center and zoom."""
