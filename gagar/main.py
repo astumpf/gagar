@@ -292,7 +292,7 @@ class GtkControl(Subscriber):
         wv.focus_player(client.player)
 
     def on_world_update_post(self):
-       pass# self.world_viewer.drawing_area.queue_draw()
+        pass  # self.world_viewer.drawing_area.queue_draw()
 
     def on_key_pressed(self, val, char):
         if val == Gdk.KEY_Tab:

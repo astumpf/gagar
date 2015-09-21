@@ -8,22 +8,20 @@ info_size = 14
 
 
 def nick_size(cell, w):
-    return max(14, w.world_to_screen_size(.3 * cell.size))
+    return max(14, w.world_to_screen_size(.3 * cell.draw_size))
 
 
 class CellsDrawer(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
             pos = w.world_to_screen_pos(cell.pos)
-            c.fill_circle(pos, w.world_to_screen_size(cell.size),
+            c.fill_circle(pos, w.world_to_screen_size(cell.draw_size),
                           color=to_rgba(cell.color, .8))
 
 
 class CellNames(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
             if cell.name:
                 pos = w.world_to_screen_pos(cell.pos)
@@ -61,8 +59,7 @@ class RemergeTimes(Subscriber):
 
 
 class CellMasses(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
             if cell.is_food or cell.is_ejected_mass:
                 continue
@@ -74,8 +71,7 @@ class CellMasses(Subscriber):
 
 
 class CellHostility(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         if not w.player.is_alive:
             return  # nothing to be hostile against
         own_min_mass = min(c.mass for c in w.player.own_cells)
@@ -92,21 +88,20 @@ class CellHostility(Subscriber):
                     color = RED
                 else:
                     continue  # no threat, do not mark
-            elif own_min_mass > cell.mass * 1.3 * 2:
+            elif own_min_mass > cell.mass * 1.33 * 2:
                 color = PURPLE
-            elif own_min_mass > cell.mass * 1.3:
+            elif own_min_mass > cell.mass * 1.33:
                 color = GREEN
-            elif cell.mass > own_min_mass * 1.3 * 2:
+            elif cell.mass > own_min_mass * 1.33 * 2:
                 color = RED
-            elif cell.mass > own_min_mass * 1.3:
+            elif cell.mass > own_min_mass * 1.33:
                 color = ORANGE
-            c.stroke_circle(pos, w.world_to_screen_size(cell.size),
+            c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
                             width=5, color=color)
 
 
 class ForceFields(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         split_dist = 760
         for cell in w.player.own_cells:
             pos = w.world_to_screen_pos(cell.pos)
@@ -130,15 +125,14 @@ class ForceFields(Subscriber):
                 if own_max_size > cell.size:  # dangerous virus
                     c.stroke_circle(pos, w.world_to_screen_size(own_max_size),
                                     width=3, color=to_rgba(RED, .5))
-            elif cell.mass > own_min_mass * 1.25 * 2:  # can split+kill me
-                radius = max(split_dist + cell.size * .7071, cell.size)
+            elif cell.mass > own_min_mass * 1.33 * 2:  # can split+kill me
+                radius = max(split_dist + cell.draw_size * .7071, cell.draw_size)
                 c.stroke_circle(pos, w.world_to_screen_size(radius),
                                 width=3, color=to_rgba(RED, .5))
 
 
 class MovementLines(Subscriber):
-    @staticmethod
-    def on_draw_cells(c, w):
+    def on_draw_cells(self, c, w):
         for cell in w.player.own_cells:
             c.draw_line(w.world_to_screen_pos(cell.pos), w.mouse_pos,
                         width=1, color=to_rgba(BLACK, .3))
