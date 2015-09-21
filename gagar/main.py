@@ -121,6 +121,8 @@ class Logger(Subscriber):
 
     def on_world_rect(self, **kwargs):
         self.on_update_msg('World is from %(left)i:%(top)i to %(right)i:%(bottom)i' % kwargs)
+        if 'server_msgs' in kwargs:
+            self.on_update_msg('Server message: %(server_msg)s' % kwargs)
 
     def on_cell_eaten(self, eater_id, eaten_id):
         player = self.client.player
@@ -229,8 +231,8 @@ class GtkControl(Subscriber):
         self.world_viewer = wv = WorldViewer(client.world)
 
         # background
-        key(Gdk.KEY_F2, SolidBackground())
-        key(Gdk.KEY_F2, SolidBackground(WHITE), disabled=True)
+        key(Gdk.KEY_F2, SolidBackground(), disabled=True)
+        key(Gdk.KEY_F2, SolidBackground(WHITE))
         key('b', WorldBorderDrawer())
         key('g', GridDrawer())
 

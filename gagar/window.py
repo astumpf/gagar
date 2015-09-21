@@ -3,8 +3,8 @@ from gi.repository import Gtk, Gdk
 from agarnet.vec import Vec
 from .drawutils import *
 import time
-
 import threading
+
 
 
 class WorldViewer(object):
@@ -124,7 +124,7 @@ class WorldViewer(object):
         self.win_size.set(alloc.width, alloc.height)
         self.screen_center = self.win_size / 2
         if self.player:  # any client is focused
-            if self.player.is_alive or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
+            if self.player.is_alive or (self.player.center.x == 0 and self.player.center.y == 0) or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
                 window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
                 self.screen_scale = lerp_smoothing(self.screen_scale, self.player.scale * window_scale, 0.1, 0.001)
 
