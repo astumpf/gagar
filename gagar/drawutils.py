@@ -25,7 +25,7 @@ def lerp_smoothing(cur, new, smooth_factor, min_diff=1):
         return cur + diff * smooth_factor
     else:
         return new
-    
+
 
 def frange(start, end, step):
     """same as range(), but allows using floats"""

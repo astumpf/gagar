@@ -12,10 +12,25 @@ def nick_size(cell, w):
 
 
 class CellsDrawer(Subscriber):
+    def __init__(self):
+        self.previous_positions = dict()
+
     def on_draw_cells(self, c, w):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
-            pos = w.world_to_screen_pos(cell.pos)
+            if not cell.is_food and not cell.is_virus:
+                try:
+                    x, y = self.previous_positions[cell.cid]
+                except KeyError:
+                    pos = w.world_to_screen_pos(cell.pos)
+                else:
+                    x = lerp_smoothing(x, cell.pos.x, 0.5, 0.1)
+                    y = lerp_smoothing(y, cell.pos.y, 0.5, 0.1)
+                    pos = w.world_to_screen_pos(Vec(x, y))
+                self.previous_positions[cell.cid] = (cell.pos.x, cell.pos.y)
+            else:
+                pos = w.world_to_screen_pos(cell.pos)
+
             c.fill_circle(pos, w.world_to_screen_size(cell.draw_size),
                           color=to_rgba(cell.color, .8))
 
