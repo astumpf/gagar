@@ -95,8 +95,12 @@ class GradientBot(Subscriber):
 
     def stop_bot(self):
         print("Bot stopped")
-        self.running = False
-        self.scheduler.cancel(self.current_event)
+        while self.running:
+            try:
+                self.scheduler.cancel(self.current_event)
+                self.running = False
+            except ValueError:
+                pass
 
     def main_loop(self):
         if self.client.player.is_alive:
