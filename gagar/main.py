@@ -250,7 +250,7 @@ class GtkControl(Subscriber):
         self.world_viewer.drawing_area.queue_draw()
 
     def on_key_pressed(self, val, char):
-        if char == 'q' or val == Gdk.KEY_Escape:
+        if val == Gdk.KEY_Escape:
             self.client.disconnect()
             Gtk.main_quit()
         elif char == 's':
