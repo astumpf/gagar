@@ -299,7 +299,7 @@ class GtkControl(Subscriber):
     def on_key_pressed(self, val, char):
         if val == Gdk.KEY_Tab:
             self.native_control.toggle_sending_mouse()
-        if char == 'q' or val == Gdk.KEY_Escape:
+        if val == Gdk.KEY_Escape:
             self.client.disconnect()
             Gtk.main_quit()
         elif char == 's':
