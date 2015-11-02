@@ -79,7 +79,7 @@ class CellHostility(Subscriber):
             pos = w.world_to_screen_pos(cell.pos)
             color = YELLOW
             if cell.is_virus:
-                if own_max_mass > cell.mass:
+                if own_max_mass >= cell.mass * 1.33:
                     color = RED
                 else:
                     continue  # no threat, do not mark
