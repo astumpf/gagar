@@ -261,7 +261,6 @@ class GtkControl(Subscriber):
         # Team Overlay
         key('t', TeamOverlay(client))
 
-
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 
         client.player.nick = nick
@@ -304,6 +303,8 @@ class GtkControl(Subscriber):
             Gtk.main_quit()
         elif char == 's':
             self.client.send_spectate()
+        elif char == 'o':
+            self.client.send_explode()
         elif char == 'r' or val == Gdk.KEY_Return:
             self.client.send_respawn()
         elif char == 'c':  # reconnect to any server

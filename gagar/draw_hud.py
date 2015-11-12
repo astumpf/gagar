@@ -2,9 +2,10 @@ from collections import deque
 from time import time, sleep, monotonic
 import sched
 import threading
-from agarnet.utils import get_party_address
 
+from agarnet.utils import get_party_address
 from agarnet.vec import Vec
+from agarnet.buffer import *
 
 from .drawutils import *
 from .subscriber import Subscriber
@@ -18,8 +19,9 @@ class TeamOverlay(Subscriber):
     def __init__(self, client):
         self.client = client
 
-        self.teamer = AgarioTeamer()
+        self.teamer = AgarioTeamer(client)
         self.state = None
+        self.world_update_buf = None
 
         self.scheduler = sched.scheduler(time, sleep)
         self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
@@ -39,7 +41,8 @@ class TeamOverlay(Subscriber):
     def send_state(self):
         # print("Sending current state!")
         if len(self.teamer.team_list) > 0 and self.state is not None:
-            self.teamer.send_state_to_all(self.state)
+            self.teamer.send_to_all(self.state.to_buffer())
+            self.teamer.send_to_all(self.world_update_buf)
         self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
 
     def on_draw_hud(self, c, w):
@@ -87,6 +90,10 @@ class TeamOverlay(Subscriber):
         token = player.last_state.server
         address = get_party_address(token)
         self.client.connect(address, token)
+
+    def on_world_update_msg(self, buf):
+        self.world_update_buf = BufferStruct(opcode=101)
+        self.world_update_buf.append(buf)
 
     def _test(self):
         state1 = State("Peter", 100, 200, "R38BQ", 0)

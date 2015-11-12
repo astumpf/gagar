@@ -3,11 +3,13 @@ import socket
 import threading
 import time
 
+from agarnet.buffer import *
+
 PORT = 55555
 TIMEOUT = 2
 
 
-class State():
+class State:
     def __init__(self, name, x, y, server, mass):
         self.name = name
         self.x = x
@@ -16,22 +18,23 @@ class State():
         self.mass = mass
 
     @classmethod
-    def from_data(cls, data):
-        array = data.decode('utf8').split("|")
-        if len(array) == 5:
-            return cls(array[0], float(array[1]), float(array[2]), array[3], float(array[4]))
-        else:
-            return None
+    def from_buffer(cls, buf):
+        return cls(buf.pop_str16(), buf.pop_float32(), buf.pop_float32(), buf.pop_str16(), buf.pop_uint32())
 
-    def to_data(self):
-        s = "|".join((self.name, str(self.x), str(self.y), self.server, str(self.mass)))
-        return bytes(s, 'utf8')
+    def to_buffer(self):
+        buf = BufferStruct(opcode=100)
+        buf.push_null_str16(self.name)
+        buf.push_float32(self.x)
+        buf.push_float32(self.y)
+        buf.push_null_str16(self.server)
+        buf.push_uint32(self.mass)
+        return buf
 
     def __str__(self):
         return "|".join((self.name, str(self.x), str(self.y), self.server, str(self.mass)))
 
 
-class Player():
+class Player:
     def __init__(self, address):
         self.address = address
         self.last_state = None
@@ -46,15 +49,16 @@ def get_local_ip():
     return s.getsockname()[0]
 
 
-class AgarioTeamer():
-    def __init__(self):
+class AgarioTeamer:
+    def __init__(self, client):
+        self.client = client
         self.local_ip = get_local_ip()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.socket.bind(("", PORT))
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
         self.team_list = dict()
 
-        self.state_server = UDPServer(self._received_new_state, self.socket)
+        self.state_server = UDPServer(self._received_msg, self.socket)
         self.state_server.start()
 
     def add_player(self, ip):
@@ -65,17 +69,17 @@ class AgarioTeamer():
 
     def send_discover(self, state):
         # print("Sending discover with state:", state)
-        self.send_state_to(("<broadcast>", PORT), state)
+        self.send_to(("<broadcast>", PORT), state.to_buffer())
 
-    def send_state_to(self, address, state):
+    def send_to(self, address, buf):
         try:
-            self.socket.sendto(state.to_data(), address)
+            self.socket.sendto(buf.buffer, address)
         except socket.gaierror as e:
             print("Error while sending state:", e)
 
-    def send_state_to_all(self, state):
+    def send_to_all(self, buf):
         for address in [online for online in self.team_list if self.team_list[online].online is True]:
-            self.send_state_to(address, state)
+            self.send_state_to(address, buf)
 
     def check_conn_timeout(self):
         for player in list(self.team_list.values()):
@@ -88,22 +92,30 @@ class AgarioTeamer():
                     print("Player", player.address, "marked as offline")
                     player.online = False
 
-    def _received_new_state(self, source_addr, data):
+    def _received_msg(self, source_addr, msg):
         if source_addr[0] in (self.local_ip, "127.0.0.1", "localhost", socket.gethostname()):
             # print("Ignored data from own socket.")
             return
-        state = State.from_data(data)
-        if state is None:
-            print("Received invalid data")
-            return
-        # print("Received new state:", source_addr, data)
-        if source_addr not in self.team_list:
-            print("Found new player:", source_addr)
-            self.team_list[source_addr] = Player(source_addr)
-        player = self.team_list[source_addr]
-        player.last_state = state
-        player.last_state_time = time.monotonic()
-        player.online = True
+
+        buf = BufferStruct(msg)
+        opcode = buf.pop_uint8()
+
+        if opcode == 100:
+            state = State.from_buffer(msg)
+            if state is None:
+                print("Received invalid data")
+                return
+            # print("Received new state:", source_addr, data)
+            if source_addr not in self.team_list:
+                print("Found new player:", source_addr)
+                self.team_list[source_addr] = Player(source_addr)
+            player = self.team_list[source_addr]
+            player.last_state = state
+            player.last_state_time = time.monotonic()
+            player.online = True
+
+        else:
+            self.client.on_message(msg)
 
 
 class UDPServer(threading.Thread):
