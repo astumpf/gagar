@@ -42,7 +42,9 @@ class TeamOverlay(Subscriber):
         # print("Sending current state!")
         if len(self.teamer.team_list) > 0 and self.state is not None:
             self.teamer.send_to_all(self.state.to_buffer())
-            self.teamer.send_to_all(self.world_update_buf)
+            if self.world_update_buf is not None:
+                self.teamer.send_to_all(self.world_update_buf)
+                self.world_update_buf = None
         self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
 
     def on_draw_hud(self, c, w):
@@ -94,6 +96,12 @@ class TeamOverlay(Subscriber):
     def on_world_update_msg(self, buf):
         self.world_update_buf = BufferStruct(opcode=101)
         self.world_update_buf.append(buf)
+
+    def on_world_update_pre(self):
+        if self.teamer.last_world_buf is not None:
+            buf = self.teamer.last_world_buf
+            self.teamer.last_world_buf = None
+            self.client.parse_world_update(buf)
 
     def _test(self):
         state1 = State("Peter", 100, 200, "R38BQ", 0)

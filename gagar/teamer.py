@@ -19,7 +19,13 @@ class State:
 
     @classmethod
     def from_buffer(cls, buf):
-        return cls(buf.pop_str16(), buf.pop_float32(), buf.pop_float32(), buf.pop_str16(), buf.pop_uint32())
+        name = buf.pop_str16()
+        x = buf.pop_float32()
+        y = buf.pop_float32()
+        server = buf.pop_str16()
+        mass = buf.pop_uint32()
+        return cls(name, x, y, server, mass)
+        #return cls(buf.pop_str16(), buf.pop_float32(), buf.pop_float32(), buf.pop_str16(), buf.pop_uint32())
 
     def to_buffer(self):
         buf = BufferStruct(opcode=100)
@@ -61,6 +67,8 @@ class AgarioTeamer:
         self.state_server = UDPServer(self._received_msg, self.socket)
         self.state_server.start()
 
+        self.last_world_buf = None
+
     def add_player(self, ip):
         player = Player((ip, PORT))
         player.check_timeout = False
@@ -79,7 +87,7 @@ class AgarioTeamer:
 
     def send_to_all(self, buf):
         for address in [online for online in self.team_list if self.team_list[online].online is True]:
-            self.send_state_to(address, buf)
+            self.send_to(address, buf)
 
     def check_conn_timeout(self):
         for player in list(self.team_list.values()):
@@ -101,7 +109,7 @@ class AgarioTeamer:
         opcode = buf.pop_uint8()
 
         if opcode == 100:
-            state = State.from_buffer(msg)
+            state = State.from_buffer(buf)
             if state is None:
                 print("Received invalid data")
                 return
@@ -113,9 +121,8 @@ class AgarioTeamer:
             player.last_state = state
             player.last_state_time = time.monotonic()
             player.online = True
-
-        else:
-            self.client.on_message(msg)
+        if opcode == 101:
+            self.last_world_buf = buf
 
 
 class UDPServer(threading.Thread):
