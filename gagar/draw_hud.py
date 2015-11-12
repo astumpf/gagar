@@ -42,9 +42,9 @@ class TeamOverlay(Subscriber):
         # print("Sending current state!")
         if len(self.teamer.team_list) > 0 and self.state is not None:
             self.teamer.send_to_all(self.state.to_buffer())
-            if self.world_update_buf is not None:
-                self.teamer.send_to_all(self.world_update_buf)
-                self.world_update_buf = None
+            #if self.world_update_buf is not None:
+            #    self.teamer.send_to_all(self.world_update_buf)
+            #    self.world_update_buf = None
         self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
 
     def on_draw_hud(self, c, w):
