@@ -23,9 +23,8 @@ class State:
         x = buf.pop_float32()
         y = buf.pop_float32()
         server = buf.pop_str16()
-        mass = buf.pop_uint32()
+        mass = buf.pop_float32()
         return cls(name, x, y, server, mass)
-        #return cls(buf.pop_str16(), buf.pop_float32(), buf.pop_float32(), buf.pop_str16(), buf.pop_uint32())
 
     def to_buffer(self):
         buf = BufferStruct(opcode=100)
@@ -33,7 +32,7 @@ class State:
         buf.push_float32(self.x)
         buf.push_float32(self.y)
         buf.push_null_str16(self.server)
-        buf.push_uint32(self.mass)
+        buf.push_float32(self.mass)
         return buf
 
     def __str__(self):
