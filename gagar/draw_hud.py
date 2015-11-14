@@ -1,33 +1,24 @@
 from collections import deque
-from time import time, sleep, monotonic
-import socket
-import sched
-import threading
+from time import time
 
 from agarnet.utils import get_party_address
 from agarnet.vec import Vec
-from agarnet.buffer import BufferStruct
-
-from tagar.session import Session
-from tagar.opcodes import *
 
 from .drawutils import *
 from .subscriber import Subscriber
-from .teamer import Teamer
 
-TEAM_UPDATE_RATE = 0.1
 TEAM_OVERLAY_PADDING = 50
 
 
 class TeamOverlay(Subscriber):
-    def __init__(self, teamer):
-        self.teamer = teamer
+    def __init__(self, tagar_client):
+        self.tagar_client = tagar_client
 
     def on_draw_hud(self, c, w):
         c.draw_text((10, 30), 'Team',
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
-        for i, player in enumerate(list(self.teamer.player_list)):
+        for i, player in enumerate(list(self.tagar_client.player_list)):
             c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), player.nick,
                         align='left', color=WHITE, outline=(BLACK, 2), size=18)
             if player.mass > 0:
@@ -45,7 +36,7 @@ class TeamOverlay(Subscriber):
             button.id = player
             w.register_button(button)
             c.draw_button(button)
-            if self.teamer.client.player.is_alive and player.is_alive:
+            if self.tagar_client.client.player.is_alive and player.is_alive:
                 c.draw_line(w.world_to_screen_pos(w.player.center),
                             w.world_to_screen_pos(Vec(player.position_x, player.position_y)),
                             width=2, color=GREEN)
@@ -57,10 +48,10 @@ class TeamOverlay(Subscriber):
     def on_button_pressed(self, button, pos):
         player = button.id
         print("Joining player", player.nick)
-        self.teamer.client.disconnect()
+        self.tagar_client.client.disconnect()
         token = player.party_token
         address = get_party_address(token)
-        self.teamer.client.connect(address, token)
+        self.tagar_client.client.connect(address, token)
 
 
 class Minimap(Subscriber):

@@ -5,13 +5,13 @@ from gi.repository import Gtk, GLib, Gdk
 
 from agarnet.client import Client
 from agarnet.utils import special_names, find_server
+from tagar.client import TagarClient
 from .draw_hud import *
 from .draw_cells import *
 from .draw_background import *
 from .drawutils import *
 from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
-from .teamer import Teamer
 from .window import WorldViewer
 import threading
 from socket import gaierror
@@ -225,7 +225,7 @@ class GtkControl(Subscriber):
             self.multi_sub.sub(KeyToggler(keycode, *subs, disabled=disabled))
 
         self.client = client = Client(self.multi_sub)
-        self.teamer = teamer = Teamer(client)
+        self.tagar_client = tagar_client = TagarClient(client)
 
         self.native_control = NativeControl(client)
         self.multi_sub.sub(self.native_control)
@@ -261,7 +261,7 @@ class GtkControl(Subscriber):
             )
 
         # Team Overlay
-        key('t', TeamOverlay(teamer))
+        key('t', TeamOverlay(tagar_client))
 
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 
