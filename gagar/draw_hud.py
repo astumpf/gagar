@@ -1,85 +1,54 @@
 from collections import deque
 from time import time, sleep, monotonic
+import socket
 import sched
 import threading
 
 from agarnet.utils import get_party_address
 from agarnet.vec import Vec
-from agarnet.buffer import *
+from agarnet.buffer import BufferStruct
+
+from tagar.session import Session
+from tagar.opcodes import *
 
 from .drawutils import *
 from .subscriber import Subscriber
-from .teamer import AgarioTeamer, State
+from .teamer import Teamer
 
 TEAM_UPDATE_RATE = 0.1
 TEAM_OVERLAY_PADDING = 50
 
 
 class TeamOverlay(Subscriber):
-    def __init__(self, client):
-        self.client = client
-
-        self.teamer = AgarioTeamer(client)
-        self.state = None
-        self.world_update_buf = None
-
-        self.scheduler = sched.scheduler(time, sleep)
-        self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
-        thread = threading.Thread(target=self.scheduler.run)
-        thread.setDaemon(True)
-        thread.start()
-
-        # self._test()
-
-    def get_state(self, world):
-        x, y = world.player.center
-        token = self.client.server_token if len(self.client.server_token) == 5 else 'FFA'
-        state = State(world.player.nick, x, y, token, world.player.total_mass)
-
-        return state
-
-    def send_state(self):
-        # print("Sending current state!")
-        if len(self.teamer.team_list) > 0 and self.state is not None:
-            self.teamer.send_to_all(self.state.to_buffer())
-            #if self.world_update_buf is not None:
-            #    self.teamer.send_to_all(self.world_update_buf)
-            #    self.world_update_buf = None
-        self.scheduler.enter(TEAM_UPDATE_RATE, 1, self.send_state)
+    def __init__(self, teamer):
+        self.teamer = teamer
 
     def on_draw_hud(self, c, w):
-        state = self.get_state(w)
-        if self.state is None:
-            self.teamer.send_discover(state)
-        self.state = state
-
         c.draw_text((10, 30), 'Team',
                     align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
-        for i, peer in enumerate(list(self.teamer.team_list.values())):
-            c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), peer.last_state.name,
+        for i, player in enumerate(list(self.teamer.player_list)):
+            c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), player.nick,
                         align='left', color=WHITE, outline=(BLACK, 2), size=18)
-            if peer.last_state.mass > 0:
+            if player.mass > 0:
                 mass_color = GRAY
-                mass_text = 'Mass: ' + str(peer.last_state.mass)
+                mass_text = 'Mass: ' + str(player.mass)
             else:
                 mass_text = 'Dead'
                 mass_color = RED
             c.draw_text((10, 75 + TEAM_OVERLAY_PADDING * i), mass_text,
                         align='left', color=mass_color, outline=(BLACK, 2), size=12)
 
-            c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), '#' + peer.last_state.server,
+            c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), '#' + player.party_token,
                         align='left', color=GRAY, outline=(BLACK, 2), size=12)
             button = Button(90, 75 - 12 + TEAM_OVERLAY_PADDING * i, 50, 25, "JOIN")
-            button.id = peer
+            button.id = player
             w.register_button(button)
             c.draw_button(button)
-            if self.client.player.is_alive:
+            if self.teamer.client.player.is_alive and player.is_alive:
                 c.draw_line(w.world_to_screen_pos(w.player.center),
-                            w.world_to_screen_pos(Vec(peer.last_state.x, peer.last_state.y)),
+                            w.world_to_screen_pos(Vec(player.position_x, player.position_y)),
                             width=2, color=GREEN)
-
-        self.teamer.check_conn_timeout()
 
     @staticmethod
     def on_button_hover(button, pos):
@@ -88,33 +57,10 @@ class TeamOverlay(Subscriber):
     def on_button_pressed(self, button, pos):
         player = button.id
         print("Joining player", player.last_state.name)
-        self.client.disconnect()
+        self.teamer.client.disconnect()
         token = player.last_state.server
         address = get_party_address(token)
         self.client.connect(address, token)
-
-    def on_world_update_msg(self, buf):
-        self.world_update_buf = BufferStruct(opcode=101)
-        self.world_update_buf.append(buf)
-
-    def on_world_update_pre(self):
-        if self.teamer.last_world_buf is not None:
-            buf = self.teamer.last_world_buf
-            self.teamer.last_world_buf = None
-            self.client.parse_world_update(buf)
-
-    def _test(self):
-        state1 = State("Peter", 100, 200, "R38BQ", 0)
-        player1 = self.teamer.add_player("peter-computer")
-        player1.last_state = state1
-        player1.last_state_time = monotonic()
-        player1.online = True
-
-        state2 = State("Hans", -100, -200, "TTTTT", 1200)
-        player2 = self.teamer.add_player("192.168.2.2")
-        player2.last_state = state2
-        player2.last_state_time = monotonic()
-        player2.online = True
 
 
 class Minimap(Subscriber):

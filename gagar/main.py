@@ -11,6 +11,7 @@ from .draw_background import *
 from .drawutils import *
 from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
+from .teamer import Teamer
 from .window import WorldViewer
 import threading
 from socket import gaierror
@@ -224,6 +225,7 @@ class GtkControl(Subscriber):
             self.multi_sub.sub(KeyToggler(keycode, *subs, disabled=disabled))
 
         self.client = client = Client(self.multi_sub)
+        self.teamer = teamer = Teamer(client)
 
         self.native_control = NativeControl(client)
         self.multi_sub.sub(self.native_control)
@@ -259,7 +261,7 @@ class GtkControl(Subscriber):
             )
 
         # Team Overlay
-        key('t', TeamOverlay(client))
+        key('t', TeamOverlay(teamer))
 
         key(Gdk.KEY_F3, FpsMeter(50), disabled=True)
 

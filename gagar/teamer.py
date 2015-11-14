@@ -1,153 +1,116 @@
 #!/usr/bin/python3.4
+import sys
 import socket
+from time import time, sleep
+import sched
 import threading
-import time
 
-from agarnet.buffer import *
+from agarnet.buffer import BufferStruct
+from agarnet.dispatcher import Dispatcher
+from tagar.session import Session
+from tagar.player import Player
+from tagar.opcodes import *
 
 PORT = 55555
 TIMEOUT = 2
+UPDATE_RATE = 0.04
 
 
-class State:
-    def __init__(self, name, x, y, server, mass):
-        self.name = name
-        self.x = x
-        self.y = y
-        self.server = server
-        self.mass = mass
-
-    @classmethod
-    def from_buffer(cls, buf):
-        name = buf.pop_str16()
-        x = buf.pop_float32()
-        y = buf.pop_float32()
-        server = buf.pop_str16()
-        mass = buf.pop_float32()
-        return cls(name, x, y, server, mass)
-
-    def to_buffer(self):
-        buf = BufferStruct(opcode=100)
-        buf.push_null_str16(self.name)
-        buf.push_float32(self.x)
-        buf.push_float32(self.y)
-        buf.push_null_str16(self.server)
-        buf.push_float32(self.mass)
-        return buf
-
-    def __str__(self):
-        return "|".join((self.name, str(self.x), str(self.y), self.server, str(self.mass)))
-
-
-class Player:
-    def __init__(self, address):
-        self.address = address
-        self.last_state = None
-        self.last_state_time = None
-        self.check_timeout = True
-        self.online = False
-
-
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(('8.8.8.8', 0))  # connecting to a UDP address doesn't send packets
-    return s.getsockname()[0]
-
-
-class AgarioTeamer:
+class Teamer:
     def __init__(self, client):
         self.client = client
-        self.local_ip = get_local_ip()
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.socket.bind(("", PORT))
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-        self.team_list = dict()
-
-        self.state_server = UDPServer(self._received_msg, self.socket)
-        self.state_server.start()
-
+        self.dispatcher = Dispatcher(packet_s2c, self)
+        self.player_list = []
         self.last_world_buf = None
+        self.session = None
 
-    def add_player(self, ip):
-        player = Player((ip, PORT))
-        player.check_timeout = False
-        self.team_list[(ip, PORT)] = player
-        return player
+        self.scheduler = sched.scheduler(time, sleep)
+        self.scheduler.enter(UPDATE_RATE, 1, self.recv_update)
+        self.scheduler.enter(UPDATE_RATE, 1, self.send_update)
+        thread = threading.Thread(target=self.scheduler.run)
+        thread.setDaemon(True)
+        thread.start()
 
-    def send_discover(self, state):
-        # print("Sending discover with state:", state)
-        self.send_to(("<broadcast>", PORT), state.to_buffer())
+        self.connect('127.0.0.1', 5550, "42")
 
-    def send_to(self, address, buf):
+    def connect(self, addr, port, password):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, True)
+
+        # try to connect to server
         try:
-            self.socket.sendto(buf.buffer, address)
-        except socket.gaierror as e:
-            print("Error while sending state:", e)
+            # Connect to server and send data
+            sock.connect((addr, port))
 
-    def send_to_all(self, buf):
-        for address in [online for online in self.team_list if self.team_list[online].online is True]:
-            self.send_to(address, buf)
+            buf = BufferStruct(opcode=100)
+            buf.push_null_str16(password)
+            sock.send(buf.buffer)
 
-    def check_conn_timeout(self):
-        for player in list(self.team_list.values()):
-            diff = time.monotonic() - player.last_state_time
-            if (player.last_state_time is None or diff > TIMEOUT) and player.online is True:
-                if player.check_timeout:
-                    print("Player", player.address, "timed out. Inactive for", diff, "seconds.")
-                    del self.team_list[player.address]
-                else:
-                    print("Player", player.address, "marked as offline")
-                    player.online = False
+            # Receive data from the server and shut down
+            msg = sock.recv(1024)
+            buf = BufferStruct(msg)
 
-    def _received_msg(self, source_addr, msg):
-        if source_addr[0] in (self.local_ip, "127.0.0.1", "localhost", socket.gethostname()):
-            # print("Ignored data from own socket.")
+            opcode = buf.pop_uint8()
+
+            if opcode != 200:
+                sock.close()
+                return
+
+            id = buf.pop_null_str8()
+
+            self.session = Session(id, sock)
+            print("Session started with id: ", id)
+
+        except socket.error:
+            pass
+        finally:
+            pass
+
+    def disconnect(self):
+        self.session.disconnect()
+
+    def recv_update(self):
+        self.scheduler.enter(UPDATE_RATE, 1, self.recv_update)
+
+        if not self.session or not self.session.is_connected:
+            return
+
+        msg = self.session.pop_msg()
+        if msg is None:
             return
 
         buf = BufferStruct(msg)
-        opcode = buf.pop_uint8()
+        while len(buf.buffer) > 0:
+            self.dispatcher.dispatch(buf)
 
-        if opcode == 100:
-            state = State.from_buffer(buf)
-            if state is None:
-                print("Received invalid data")
-                return
-            # print("Received new state:", source_addr, data)
-            if source_addr not in self.team_list:
-                print("Found new player:", source_addr)
-                self.team_list[source_addr] = Player(source_addr)
-            player = self.team_list[source_addr]
-            player.last_state = state
-            player.last_state_time = time.monotonic()
-            player.online = True
-        if opcode == 101:
-            self.last_world_buf = buf
+    def send_update(self):
+        self.scheduler.enter(UPDATE_RATE, 1, self.send_update)
 
+        if not self.session or not self.session.is_connected:
+            return
 
-class UDPServer(threading.Thread):
-    def __init__(self, cb=None, sock=None):
-        super().__init__()
-        self.setDaemon(True)
-        self.cb = cb
-        if sock is None:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-            self.socket.bind(("", PORT))
-        else:
-            self.socket = sock
+        # collect player info
+        p = Player(self.session)
+        p.nick = self.client.player.nick
+        p.position_x, p.position_y = self.client.player.center
+        p.mass = self.client.player.total_mass
+        p.is_alive = self.client.player.is_alive
+        p.party_token = self.client.server_token if len(self.client.server_token) == 5 else 'FFA'
 
-    def run(self):
-        while True:
-            data, addr = self.socket.recvfrom(1024)
-            if self.cb is not None:
-                self.cb(addr, data)
+        # send update
+        try:
+            buf = BufferStruct(opcode=110)
+            p.pack_player_update(buf)
+            self.session.sendall(buf.buffer)
+        except socket.error:
+            self.disconnect()
 
+    def parse_player_list_update(self, buf):
+        list_length = buf.pop_uint32()
 
-if __name__ == "__main__":
-    teamer = AgarioTeamer()
-    own_state = State("test_name", 0, 0, "XCVR", 512)
-    print([x for x in dir(own_state) if x not in dir(State)])
-    teamer.send_discover(own_state)
-
-    while True:
-        time.sleep(1)
-        teamer.check_conn_timeout()
+        self.player_list = []
+        for i in range(0, list_length):
+            p = Player()
+            p.parse_player_update(buf)
+            if str(self.session.id) != p.id:
+                self.player_list.append(p)
