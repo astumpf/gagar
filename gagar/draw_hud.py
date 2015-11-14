@@ -56,11 +56,11 @@ class TeamOverlay(Subscriber):
 
     def on_button_pressed(self, button, pos):
         player = button.id
-        print("Joining player", player.last_state.name)
+        print("Joining player", player.nick)
         self.teamer.client.disconnect()
-        token = player.last_state.server
+        token = player.party_token
         address = get_party_address(token)
-        self.client.connect(address, token)
+        self.teamer.client.connect(address, token)
 
 
 class Minimap(Subscriber):
