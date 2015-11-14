@@ -4,6 +4,8 @@ import socket
 from time import time, sleep
 import sched
 import threading
+import hashlib
+import random
 
 from agarnet.buffer import BufferStruct
 from agarnet.dispatcher import Dispatcher
@@ -31,7 +33,7 @@ class Teamer:
         thread.setDaemon(True)
         thread.start()
 
-        self.connect('127.0.0.1', 5550, "42")
+        self.connect('127.0.0.1', 5555, "42")
 
     def connect(self, addr, port, password):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,11 +45,24 @@ class Teamer:
             sock.connect((addr, port))
 
             buf = BufferStruct(opcode=100)
-            buf.push_null_str16(password)
+
+            # create challenge
+            rand = random.randint(1, 254)
+            m = hashlib.md5()
+            m.update(password.encode('utf-16'))
+            m.update(str(rand).encode('utf-8'))
+
+            # send login challenge
+            buf.push_null_str8(m.hexdigest())
+            buf.push_uint8(rand)
             sock.send(buf.buffer)
 
-            # Receive data from the server and shut down
+            # Receive data from the server
             msg = sock.recv(1024)
+            if msg is None or len(msg) == 0:
+                print("Connection to team server rejected!")
+                return
+
             buf = BufferStruct(msg)
 
             opcode = buf.pop_uint8()
@@ -59,7 +74,7 @@ class Teamer:
             id = buf.pop_null_str8()
 
             self.session = Session(id, sock)
-            print("Session started with id: ", id)
+            print("Connected to team server with session id: ", id)
 
         except socket.error:
             pass
