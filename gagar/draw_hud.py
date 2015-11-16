@@ -15,31 +15,58 @@ class TeamOverlay(Subscriber):
         self.tagar_client = tagar_client
 
     def on_draw_hud(self, c, w):
-        c.draw_text((10, 30), 'Team',
-                    align='left', color=WHITE, outline=(BLACK, 2), size=27)
+        c.draw_text((10, 30), 'Team', align='left', color=WHITE, outline=(BLACK, 2), size=27)
 
-        for i, player in enumerate(list(self.tagar_client.player_list)):
+        # draw player position in main view
+        for i, player in enumerate(self.tagar_client.player_list):
             c.draw_text((10, 60 + TEAM_OVERLAY_PADDING * i), player.nick,
                         align='left', color=WHITE, outline=(BLACK, 2), size=18)
+
             if player.mass > 0:
                 mass_color = GRAY
-                mass_text = 'Mass: ' + str(player.mass)
+                mass_text = 'Mass: ' + str('%.2f' % player.mass)
             else:
                 mass_text = 'Dead'
                 mass_color = RED
+
             c.draw_text((10, 75 + TEAM_OVERLAY_PADDING * i), mass_text,
                         align='left', color=mass_color, outline=(BLACK, 2), size=12)
 
             c.draw_text((10, 88 + TEAM_OVERLAY_PADDING * i), '#' + player.party_token,
                         align='left', color=GRAY, outline=(BLACK, 2), size=12)
+
             button = Button(90, 75 - 12 + TEAM_OVERLAY_PADDING * i, 50, 25, "JOIN")
             button.id = player
             w.register_button(button)
             c.draw_button(button)
-            if self.tagar_client.client.player.is_alive and player.is_alive:
+            if self.tagar_client.player.is_alive and player.is_alive:
                 c.draw_line(w.world_to_screen_pos(w.player.center),
                             w.world_to_screen_pos(Vec(player.position_x, player.position_y)),
                             width=2, color=GREEN)
+
+        # draw minimap
+        if w.world.size:
+            minimap_w = w.win_size.x / 5
+            minimap_size = Vec(minimap_w, minimap_w)
+            minimap_scale = minimap_size.x / w.world.size.x
+            minimap_offset = w.win_size - minimap_size
+
+            def world_to_map(world_pos):
+                pos_from_top_left = world_pos - w.world.top_left
+                return minimap_offset + pos_from_top_left * minimap_scale
+
+            # outline the area visible in window
+            c.stroke_rect(world_to_map(w.screen_to_world_pos(Vec(0, 0))),
+                          world_to_map(w.screen_to_world_pos(w.win_size)),
+                          width=1, color=BLACK)
+
+            cells = self.tagar_client.team_world.cells.copy()
+            for cell in cells.values():
+                if cell.cid not in w.world.cells:
+                    alpha = .5 if cell.mass > (self.tagar_client.player.mass * 0.66) else 0.25
+                    c.stroke_circle(world_to_map(cell.pos),
+                                    cell.size * minimap_scale,
+                                    color=to_rgba(cell.color, alpha))
 
     @staticmethod
     def on_button_hover(button, pos):
@@ -47,6 +74,9 @@ class TeamOverlay(Subscriber):
 
     def on_button_pressed(self, button, pos):
         player = button.id
+        if player.party_token == 'FFA':
+            return
+
         print("Joining player", player.nick)
         self.tagar_client.client.disconnect()
         token = player.party_token
