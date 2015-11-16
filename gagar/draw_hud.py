@@ -81,7 +81,7 @@ class TeamOverlay(Subscriber):
         self.tagar_client.client.disconnect()
         token = player.party_token
         address = get_party_address(token)
-        self.tagar_client.client.connect(address, token)
+        self.tagar_client.agar_client.connect(address, token)
 
 
 class Minimap(Subscriber):
