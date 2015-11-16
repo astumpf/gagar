@@ -152,7 +152,29 @@ class WorldViewer(object):
             self.recalculate()
             self.draw_subscriber.on_draw_background(c, self)
             self.draw_subscriber.on_draw_cells(c, self)
+            self.draw_minimap_backgound(c, self)
+            self.draw_subscriber.on_draw_minimap(c, self)
             self.draw_subscriber.on_draw_hud(c, self)
+
+    def draw_minimap_backgound(self, c, w):
+        if w.world.size:
+            minimap_w = w.win_size.x / 5
+            minimap_size = Vec(minimap_w, minimap_w)
+            minimap_scale = minimap_size.x / w.world.size.x
+            minimap_offset = w.win_size - minimap_size
+
+            def world_to_map(world_pos):
+                pos_from_top_left = world_pos - w.world.top_left
+                return minimap_offset + pos_from_top_left * minimap_scale
+
+            # minimap background
+            c.fill_rect(minimap_offset, size=minimap_size,
+                        color=to_rgba(DARK_GRAY, .8))
+
+            # outline the area visible in window
+            c.stroke_rect(world_to_map(w.screen_to_world_pos(Vec(0, 0))),
+                          world_to_map(w.screen_to_world_pos(w.win_size)),
+                          width=1, color=BLACK)
 
 
 class Timer:
