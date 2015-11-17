@@ -25,13 +25,21 @@ class TeamOverlay(Subscriber):
                 pos_from_top_left = world_pos - w.world.top_left
                 return minimap_offset + pos_from_top_left * minimap_scale
 
+            # draw cells
             cells = self.tagar_client.team_world.cells.copy()
             for cell in cells.values():
                 if cell.cid not in w.world.cells:
-                    alpha = .5 if cell.mass > (self.tagar_client.player.total_mass * 0.66) else 0.25
+                    alpha = .66 if cell.mass > (self.tagar_client.player.total_mass * 0.66) else 0.33
                     c.stroke_circle(world_to_map(cell.pos),
                                     cell.size * minimap_scale,
                                     color=to_rgba(cell.color, alpha))
+
+            # draw lines to team members
+            for i, player in enumerate(self.tagar_client.player_list.values()):
+                if self.tagar_client.player.is_alive and player.is_alive:
+                    c.draw_line(world_to_map(w.player.center),
+                                world_to_map(Vec(player.position_x, player.position_y)),
+                                width=1, color=GREEN)
 
     def on_draw_hud(self, c, w):
         c.draw_text((10, 30), 'Team', align='left', color=WHITE, outline=(BLACK, 2), size=27)
@@ -58,6 +66,8 @@ class TeamOverlay(Subscriber):
             button.id = player
             w.register_button(button)
             c.draw_button(button)
+
+            # draw lines to team members
             if self.tagar_client.player.is_alive and player.is_alive:
                 c.draw_line(w.world_to_screen_pos(w.player.center),
                             w.world_to_screen_pos(Vec(player.position_x, player.position_y)),
