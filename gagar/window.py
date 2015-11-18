@@ -138,10 +138,10 @@ class WorldViewer(object):
         self.win_size.set(alloc.width, alloc.height)
         self.screen_center = self.win_size / 2
         if self.player:  # any client is focused
-            if self.player.is_alive or (self.player.center.x == 0 and self.player.center.y == 0) or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
-                window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
-                new_screen_scale = self.player.scale * window_scale * self.screen_zoom_scale
-                self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.001)
+            # if self.player.is_alive or (self.player.center.x == 0 and self.player.center.y == 0) or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
+            window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
+            new_screen_scale = self.player.scale * window_scale * self.screen_zoom_scale
+            self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.0001)
 
             smoothing_factor = 0.1
             if self.player.is_alive:
@@ -153,7 +153,7 @@ class WorldViewer(object):
             self.world = self.player.world
         elif self.world.size:
             new_screen_scale = min(self.win_size.x / self.world.size.x, self.win_size.y / self.world.size.y) * self.screen_zoom_scale
-            self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.001)
+            self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.0001)
             self.world_center = self.world.center
         else:
             # happens when the window gets drawn before the world got updated

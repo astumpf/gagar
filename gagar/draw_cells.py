@@ -12,22 +12,29 @@ def nick_size(cell, w):
 
 
 class CellsDrawer(Subscriber):
+    @staticmethod
+    def draw(c, w, cell, pos=None, alpha=1.0):
+        if not pos:
+            pos = w.world_to_screen_pos(cell.pos)
+        c.fill_circle(pos, w.world_to_screen_size(cell.draw_size), color=to_rgba(cell.color, alpha))
+
     def on_draw_cells(self, c, w):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
-            pos = w.world_to_screen_pos(cell.pos)
-            c.fill_circle(pos, w.world_to_screen_size(cell.draw_size),
-                          color=to_rgba(cell.color, .8))
-
+            self.draw(c, w, cell, alpha=0.8)
 
 class CellNames(Subscriber):
+    @staticmethod
+    def draw(c, w, cell, pos=None):
+        if cell.name:
+            if not pos:
+                pos = w.world_to_screen_pos(cell.pos)
+            size = nick_size(cell, w)
+            c.draw_text(pos, '%s' % cell.name, align='center', outline=(BLACK, 2), size=size)
+
     def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
-            if cell.name:
-                pos = w.world_to_screen_pos(cell.pos)
-                size = nick_size(cell, w)
-                c.draw_text(pos, '%s' % cell.name,
-                            align='center', outline=(BLACK, 2), size=size)
+            self.draw(c, w, cell)
 
 
 class RemergeTimes(Subscriber):
@@ -59,49 +66,68 @@ class RemergeTimes(Subscriber):
 
 
 class CellMasses(Subscriber):
+    @staticmethod
+    def draw(c, w, cell, pos=None):
+        if cell.is_food or cell.is_ejected_mass:
+            return
+        text_pos = Vec(pos) if pos else w.world_to_screen_pos(cell.pos)
+        if cell.name:
+            text_pos.iadd(Vec(0, (info_size + nick_size(cell, w)) / 2))
+        c.draw_text(text_pos, '%i' % cell.mass, align='center', outline=(BLACK, 2), size=info_size)
+
     def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
-            if cell.is_food or cell.is_ejected_mass:
-                continue
-            pos = w.world_to_screen_pos(cell.pos)
-            if cell.name:
-                pos.iadd(Vec(0, (info_size + nick_size(cell, w)) / 2))
-            c.draw_text(pos, '%i' % cell.mass,
-                        align='center', outline=(BLACK, 2), size=info_size)
+            self.draw(c, w, cell)
 
 
 class CellHostility(Subscriber):
+    @staticmethod
+    def draw(c, w, cell, pos=None, own_min_mass=None, own_max_mass=None, alpha=1.0):
+        if not w.player.is_alive:
+            return  # nothing to be hostile against
+        if cell.is_food or cell.is_ejected_mass:
+            return  # no threat
+        if cell.cid in w.player.own_ids:
+            return  # own cell, also no threat lol
+
+        if not pos:
+            pos = w.world_to_screen_pos(cell.pos)
+        if not own_min_mass:
+            own_min_mass = min(c.mass for c in w.player.own_cells)
+        if not own_max_mass:
+            own_max_mass = max(c.mass for c in w.player.own_cells)
+
+        color = YELLOW
+        if cell.is_virus:
+            if own_max_mass >= cell.mass * 1.33:
+                color = RED
+            else:
+                return  # no threat, do not mark
+        elif own_min_mass > cell.mass * 1.33 * 2:
+            color = PURPLE
+        elif own_min_mass > cell.mass * 1.33:
+            color = GREEN
+        elif cell.mass > own_min_mass * 1.33 * 2:
+            color = RED
+        elif cell.mass > own_min_mass * 1.33:
+            color = ORANGE
+        c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
+                        width=5, color=to_rgba(color, alpha))
+
     def on_draw_cells(self, c, w):
         if not w.player.is_alive:
             return  # nothing to be hostile against
+
         own_min_mass = min(c.mass for c in w.player.own_cells)
         own_max_mass = max(c.mass for c in w.player.own_cells)
         for cell in w.world.cells.values():
-            if cell.is_food or cell.is_ejected_mass:
-                continue  # no threat
-            if cell.cid in w.player.own_ids:
-                continue  # own cell, also no threat lol
-            pos = w.world_to_screen_pos(cell.pos)
-            color = YELLOW
-            if cell.is_virus:
-                if own_max_mass >= cell.mass * 1.33:
-                    color = RED
-                else:
-                    continue  # no threat, do not mark
-            elif own_min_mass > cell.mass * 1.33 * 2:
-                color = PURPLE
-            elif own_min_mass > cell.mass * 1.33:
-                color = GREEN
-            elif cell.mass > own_min_mass * 1.33 * 2:
-                color = RED
-            elif cell.mass > own_min_mass * 1.33:
-                color = ORANGE
-            c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
-                            width=5, color=color)
+            self.draw(c, w, cell, own_min_mass=own_min_mass, own_max_mass=own_max_mass)
 
 
 class ForceFields(Subscriber):
     def on_draw_cells(self, c, w):
+        if not w.player.is_alive:
+            return
         split_dist = 760
         for cell in w.player.own_cells:
             pos = w.world_to_screen_pos(cell.pos)

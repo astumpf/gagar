@@ -1,8 +1,9 @@
 from agarnet.vec import Vec
 from agarnet.utils import get_party_address
 
-from .drawutils import *
 from .subscriber import Subscriber
+from .drawutils import *
+from .draw_cells import *
 
 TEAM_OVERLAY_PADDING = 50
 INFO_SIZE = 14
@@ -12,31 +13,40 @@ class TeamOverlay(Subscriber):
     def __init__(self, tagar_client):
         self.tagar_client = tagar_client
 
+    def is_in_screen(self, w, screen_pos, radius=0.0):
+        if screen_pos.x < -radius or screen_pos.y < -radius:
+            return False
+        if screen_pos.x > w.win_size.x+radius or screen_pos.y > w.win_size.y+radius:
+            return False
+        return True
+
     def on_draw_cells(self, c, w):
         def nick_size(cell, w):
             return max(14, w.world_to_screen_size(.3 * cell.draw_size))
+
+        own_min_mass = min(c.mass for c in w.player.own_cells) if w.player.is_alive else 0
+        own_max_mass = max(c.mass for c in w.player.own_cells) if w.player.is_alive else 0
 
         # reverse to show small over large cells
         cells = [c for c in list(self.tagar_client.team_world.cells.values()) if c.cid not in self.tagar_client.player.world.cells]
         for cell in sorted(cells, reverse=True):
             pos = w.world_to_screen_pos(cell.pos)
 
-            # draw cell itself
-            c.fill_circle(pos, w.world_to_screen_size(cell.draw_size),
-                          color=to_rgba(cell.color, .5))
-
-            if cell.is_food or cell.is_ejected_mass:
+            # don't draw cells outside of visible area
+            if not self.is_in_screen(w, pos, cell.draw_size):
                 continue
 
+            # draw cell itself
+            CellsDrawer.draw(c, w, cell, pos, 0.5)
+
             # draw names
-            if cell.name:
-                size = nick_size(cell, w)
-                c.draw_text(pos, '%s' % cell.name,
-                            align='center', outline=(BLACK, 2), size=size)
+            CellNames.draw(c, w, cell, pos)
+
             # draw cell mass
-            pos.iadd(Vec(0, (INFO_SIZE + nick_size(cell, w)) / 2))
-            c.draw_text(pos, '%i' % cell.mass,
-                    align='center', outline=(BLACK, 2), size=INFO_SIZE)
+            CellMasses.draw(c, w, cell, pos)
+
+            # draw hostility
+            CellHostility.draw(c, w, cell, pos, own_min_mass, own_max_mass, 0.5)
 
     def on_draw_minimap(self, c, w):
         if w.world.size:
