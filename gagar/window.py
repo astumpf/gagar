@@ -6,7 +6,6 @@ import time
 import threading
 
 
-
 class WorldViewer(object):
     """
     Draws one world and handles keys/mouse.
@@ -16,6 +15,9 @@ class WorldViewer(object):
     """
 
     INFO_SIZE = 300
+
+    MIN_SCREEN_SCALE = 0.075
+    MAX_SCREEN_SCALE = 1
 
     def __init__(self, world):
         self.world = world
@@ -32,6 +34,7 @@ class WorldViewer(object):
         self.win_size = Vec(1000, 1000 * 9 / 16)
         self.screen_center = self.win_size / 2
         self.screen_scale = 1
+        self.screen_zoom_scale = 1
         self.world_center = Vec(0, 0)
         self.mouse_pos = Vec(0, 0)
 
@@ -43,10 +46,14 @@ class WorldViewer(object):
         self.drawing_area = Gtk.DrawingArea()
         window.add(self.drawing_area)
 
-        window.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
+        window.set_events(Gdk.EventMask.KEY_PRESS_MASK |
+                          Gdk.EventMask.POINTER_MOTION_MASK |
+                          Gdk.EventMask.BUTTON_PRESS_MASK |
+                          Gdk.EventMask.SCROLL_MASK)
         window.connect('key-press-event', self.key_pressed)
         window.connect('motion-notify-event', self.mouse_moved)
         window.connect('button-press-event', self.mouse_pressed)
+        window.connect('scroll-event', self.mouse_wheel_moved)
 
         self.drawing_area.connect('draw', self.draw)
 
@@ -103,6 +110,13 @@ class WorldViewer(object):
                 if button.contains_point(self.mouse_pos):
                     self.button_subscriber.on_button_pressed(button, self.mouse_pos)
 
+    def mouse_wheel_moved(self, _, event):
+        """Called by GTK. Set input_subscriber to handle this."""
+        if event.direction == Gdk.ScrollDirection.UP and self.screen_zoom_scale < MAX_SCREEN_SCALE:
+            self.screen_zoom_scale = min(self.screen_zoom_scale * 1.5, MAX_SCREEN_SCALE)
+        if event.direction == Gdk.ScrollDirection.DOWN and self.screen_zoom_scale > MIN_SCREEN_SCALE:
+            self.screen_zoom_scale = max(self.screen_zoom_scale * 0.75, MIN_SCREEN_SCALE)
+
     def register_button(self, button):
         self.buttons.append(button)
         if button.contains_point(self.mouse_pos):
@@ -126,7 +140,8 @@ class WorldViewer(object):
         if self.player:  # any client is focused
             if self.player.is_alive or (self.player.center.x == 0 and self.player.center.y == 0) or not self.player.scale == 1.0: # HACK due to bug: player scale is sometimes wrong (sent by server?) in spectate mode
                 window_scale = max(self.win_size.x / 1920, self.win_size.y / 1080)
-                self.screen_scale = lerp_smoothing(self.screen_scale, self.player.scale * window_scale, 0.1, 0.001)
+                new_screen_scale = self.player.scale * window_scale * self.screen_zoom_scale
+                self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.001)
 
             smoothing_factor = 0.1
             if self.player.is_alive:
@@ -137,12 +152,12 @@ class WorldViewer(object):
 
             self.world = self.player.world
         elif self.world.size:
-            new_scale = min(self.win_size.x / self.world.size.x, self.win_size.y / self.world.size.y)
-            self.screen_scale = lerp_smoothing(self.screen_scale, new_scale, 0.1, 0.001)
+            new_screen_scale = min(self.win_size.x / self.world.size.x, self.win_size.y / self.world.size.y) * self.screen_zoom_scale
+            self.screen_scale = lerp_smoothing(self.screen_scale, new_screen_scale, 0.1, 0.001)
             self.world_center = self.world.center
         else:
             # happens when the window gets drawn before the world got updated
-            self.screen_scale = 1
+            self.screen_scale = self.screen_zoom_scale
             self.world_center = Vec(0, 0)
 
     def draw(self, widget, cairo_context):
