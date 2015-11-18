@@ -112,10 +112,10 @@ class WorldViewer(object):
 
     def mouse_wheel_moved(self, _, event):
         """Called by GTK. Set input_subscriber to handle this."""
-        if event.direction == Gdk.ScrollDirection.UP and self.screen_zoom_scale < MAX_SCREEN_SCALE:
-            self.screen_zoom_scale = min(self.screen_zoom_scale * 1.5, MAX_SCREEN_SCALE)
-        if event.direction == Gdk.ScrollDirection.DOWN and self.screen_zoom_scale > MIN_SCREEN_SCALE:
-            self.screen_zoom_scale = max(self.screen_zoom_scale * 0.75, MIN_SCREEN_SCALE)
+        if event.direction == Gdk.ScrollDirection.UP and self.screen_zoom_scale < self.MAX_SCREEN_SCALE:
+            self.screen_zoom_scale = min(self.screen_zoom_scale * 1.5, self.MAX_SCREEN_SCALE)
+        if event.direction == Gdk.ScrollDirection.DOWN and self.screen_zoom_scale > self.MIN_SCREEN_SCALE:
+            self.screen_zoom_scale = max(self.screen_zoom_scale * 0.75, self.MIN_SCREEN_SCALE)
 
     def register_button(self, button):
         self.buttons.append(button)

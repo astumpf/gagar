@@ -12,6 +12,7 @@ from .draw_background import *
 from .drawutils import *
 from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
+from .team_overlay import TeamOverlay
 from .window import WorldViewer
 import threading
 from socket import gaierror
@@ -235,7 +236,7 @@ class GtkControl(Subscriber):
         # background
         key(Gdk.KEY_F2, SolidBackground())
         key(Gdk.KEY_F2, SolidBackground(WHITE), disabled=True)
-        key('b', WorldBorderDrawer())
+        key('b', WorldBorderDrawer(), FieldOfViewDrawer())
         key('g', GridDrawer())
 
         self.multi_sub.sub(CellsDrawer())
