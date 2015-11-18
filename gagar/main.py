@@ -4,7 +4,7 @@ import sys
 from gi.repository import Gtk, GLib, Gdk
 
 from agarnet.client import Client
-from agarnet.utils import special_names, find_server
+from agarnet.utils import special_names, find_server, get_party_address
 from tagar.client import TagarClient
 from .draw_hud import *
 from .draw_cells import *
