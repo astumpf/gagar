@@ -38,25 +38,15 @@ class CellNames(Subscriber):
 
 
 class RemergeTimes(Subscriber):
-    def __init__(self, client):
-        self.client = client
-        self.split_times = {}
-
-    def on_own_id(self, cid):
-        self.split_times[cid] = time()
-
     def on_draw_cells(self, c, w):
-        player = self.client.player
-        if len(player.own_ids) <= 1:
+        if len(w.player.own_ids) <= 1:
             return  # dead or only one cell, no re-merge time to display
+
         now = time()
-        for cell in player.own_cells:
-            try:
-                split_for = now - self.split_times[cell.cid]
-            except KeyError:
-                continue
+        for cell in w.player.own_cells:
+            split_for = now - cell.spawn_time
             # formula by DebugMonkey
-            ttr = player.total_mass * 0.02 + 30 - split_for
+            ttr = w.player.total_mass * 0.02 + 30 - split_for
             if ttr < 0:
                 continue
             pos = w.world_to_screen_pos(cell.pos)

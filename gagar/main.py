@@ -236,7 +236,7 @@ class GtkControl(Subscriber):
         # background
         key(Gdk.KEY_F2, SolidBackground())
         key(Gdk.KEY_F2, SolidBackground(WHITE), disabled=True)
-        key('b', WorldBorderDrawer(), FieldOfViewDrawer())
+        key('b', WorldBorderDrawer(), FieldOfView())
         key('g', GridDrawer())
 
         self.multi_sub.sub(CellsDrawer())
@@ -247,13 +247,14 @@ class GtkControl(Subscriber):
         key('i',
             CellHostility(),
             CellMasses(),
-            RemergeTimes(client),
+            RemergeTimes(),
             ForceFields(),
             )
         key('m', MovementLines())
 
         # HUD
         key(Gdk.KEY_F1,
+            SplitCounter(),
             Minimap(),
             Leaderboard(),
             ExperienceMeter(),

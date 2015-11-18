@@ -7,20 +7,48 @@ from .drawutils import *
 from .subscriber import Subscriber
 
 
-class FieldOfViewDrawer(Subscriber):
+class SplitCounter(Subscriber):
     @staticmethod
     def on_draw_hud(c, w):
-        window_scale = max(w.win_size.x / 1920, w.win_size.y / 1080)
-        screen_scale_no_zoom = w.player.scale * window_scale
+        if w.player.is_alive:
+            if len(w.player.own_ids) <= 1:
+                return
 
-        def screen_to_world_pos(screen_pos):
-            return (screen_pos - w.screen_center) \
-                .idiv(screen_scale_no_zoom).iadd(w.world_center)
+            c.fill_circle((w.win_size.x/2-18, 22), 18.0, color=to_rgba(LIGHT_GRAY, .8))
+            c.fill_circle((w.win_size.x/2+15, 22), 15.0, color=to_rgba(GRAY, .8))
+            split_text = '%d / 16' % len(w.player.own_ids)
+            c.draw_text((w.win_size.x/2, 67), split_text, align='center', color=WHITE, outline=(BLACK, 3), size=30)
 
-        # outline the area visible in window
-        c.stroke_rect(w.world_to_screen_pos(screen_to_world_pos(Vec(0, 0))),
-                      w.world_to_screen_pos(screen_to_world_pos(w.win_size)),
-                      width=1, color=LIGHT_GRAY)
+            now = time()
+            ttr_list = []
+            for cell in w.player.own_cells:
+                split_for = now - cell.spawn_time
+
+                # formula by DebugMonkey
+                ttr = w.player.total_mass * 0.02 + 30 - split_for
+                if ttr > 0.0:
+                    ttr_list.append(ttr)
+
+            if len(ttr_list) > 0:
+                ttr_text = 'Min: %.1fs / Max: %.1fs' % (min(ttr_list), max(ttr_list))
+                c.draw_text((w.win_size.x/2, 90), ttr_text, align='center', color=WHITE, outline=(BLACK, 1), size=15)
+
+
+class FieldOfView(Subscriber):
+    @staticmethod
+    def on_draw_hud(c, w):
+        if w.player.is_alive and w.screen_zoom_scale != 1.0:
+            window_scale = max(w.win_size.x / 1920, w.win_size.y / 1080)
+            screen_scale_no_zoom = w.player.scale * window_scale
+
+            def screen_to_world_pos(screen_pos):
+                return (screen_pos - w.screen_center) \
+                    .idiv(screen_scale_no_zoom).iadd(w.world_center)
+
+            # outline the area visible in window
+            c.stroke_rect(w.world_to_screen_pos(screen_to_world_pos(Vec(0, 0))),
+                          w.world_to_screen_pos(screen_to_world_pos(w.win_size)),
+                          width=1, color=LIGHT_GRAY)
 
 
 class Minimap(Subscriber):
