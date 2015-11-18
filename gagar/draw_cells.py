@@ -16,7 +16,7 @@ class CellsDrawer(Subscriber):
     def draw(c, w, cell, pos=None, alpha=1.0):
         if not pos:
             pos = w.world_to_screen_pos(cell.pos)
-        c.fill_circle(pos, w.world_to_screen_size(cell.draw_size), color=to_rgba(cell.color, alpha))
+        c.fill_circle(pos, w.world_to_screen_size(cell.draw_size), color=to_rgba(cell.color, min(cell.draw_alpha, alpha)))
 
     def on_draw_cells(self, c, w):
         # reverse to show small over large cells
@@ -112,7 +112,7 @@ class CellHostility(Subscriber):
         elif cell.mass > own_min_mass * 1.33:
             color = ORANGE
         c.stroke_circle(pos, w.world_to_screen_size(cell.draw_size),
-                        width=5, color=to_rgba(color, alpha))
+                        width=5, color=to_rgba(color, min(cell.draw_alpha, alpha)))
 
     def on_draw_cells(self, c, w):
         if not w.player.is_alive:
@@ -133,7 +133,7 @@ class ForceFields(Subscriber):
             pos = w.world_to_screen_pos(cell.pos)
             radius = split_dist + cell.size * .7071
             c.stroke_circle(pos, w.world_to_screen_size(radius),
-                            width=3, color=to_rgba(PURPLE, .5))
+                            width=3, color=to_rgba(PURPLE, min(cell.draw_alpha, 0.5)))
 
         if w.player.is_alive:
             own_max_size = max(c.size for c in w.player.own_cells)
@@ -150,15 +150,15 @@ class ForceFields(Subscriber):
             if cell.is_virus:
                 if own_max_size > cell.size:  # dangerous virus
                     c.stroke_circle(pos, w.world_to_screen_size(own_max_size),
-                                    width=3, color=to_rgba(RED, .5))
+                                    width=3, color=to_rgba(RED, min(cell.draw_alpha, 0.5)))
             elif cell.mass > own_min_mass * 1.33 * 2:  # can split+kill me
                 radius = max(split_dist + cell.draw_size * .7071, cell.draw_size)
                 c.stroke_circle(pos, w.world_to_screen_size(radius),
-                                width=3, color=to_rgba(RED, .5))
+                                width=3, color=to_rgba(RED, min(cell.draw_alpha, 0.5)))
 
 
 class MovementLines(Subscriber):
     def on_draw_cells(self, c, w):
         for cell in w.player.own_cells:
             c.draw_line(w.world_to_screen_pos(cell.pos), w.mouse_pos,
-                        width=1, color=to_rgba(BLACK, .3))
+                        width=1, color=to_rgba(BLACK, 0.3))
