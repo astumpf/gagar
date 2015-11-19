@@ -14,7 +14,6 @@ from .skins import CellSkins
 from .subscriber import MultiSubscriber, Subscriber
 from .team_overlay import TeamOverlay
 from .window import WorldViewer
-import threading
 from socket import gaierror
 
 
@@ -25,25 +24,11 @@ class NativeControl(Subscriber):
         self.sending_mouse = True
 
     def toggle_sending_mouse(self):
-        print("Toggle send mouse")
         self.sending_mouse = not self.sending_mouse
 
     def send_mouse(self):
-        if self.client.player.is_alive:
-            target = self.client.player.center + self.movement_delta
-            thread = threading.Thread(target=self.client.send_target, args=target)
-            thread.setDaemon(True)
-            thread.start()
-
-    def send_shoot(self):
-        thread = threading.Thread(target=self.client.send_shoot)
-        thread.setDaemon(True)
-        thread.start()
-
-    def send_split(self):
-        thread = threading.Thread(target=self.client.send_split)
-        thread.setDaemon(True)
-        thread.start()
+        target = self.client.player.center + self.movement_delta
+        self.client.send_target(*target)
 
     def on_world_update_post(self):
         # keep cells moving even when mouse stands still
@@ -56,22 +41,28 @@ class NativeControl(Subscriber):
             self.send_mouse()
 
     def on_mouse_pressed(self, button):
-        if button == 2:  # Middle click
+        if button == 2: # Middle click
             self.send_mouse()
-            self.send_shoot()
-        elif button == 3:  # Right click
+            self.client.send_shoot()
+        elif button == 3: # Right click
             self.send_mouse()
-            self.send_split()
+            self.client.send_split()
 
     def on_key_pressed(self, val, char):
-        if char == 'w':
+        if char == 's':
+            self.client.send_spectate()
+        elif char == 'q':
+            self.client.send_spectate_toggle()
+        elif char == 'r' or val == Gdk.KEY_Return:
+            self.client.send_respawn()
+        elif char == 'w':
             self.send_mouse()
-            self.send_shoot()
+            self.client.send_shoot()
         elif val == Gdk.KEY_space:
             self.send_mouse()
-            self.send_split()
-            # elif char == 'k':
-            # self.client.send_explode()
+            self.client.send_split()
+        elif char == 'k':
+            self.client.send_explode()
 
 
 def format_log(lines, width, indent='  '):
@@ -88,7 +79,7 @@ class Logger(Subscriber):
     def __init__(self, client):
         self.client = client
         self.log_msgs = []
-        self.leader_best = 11  # outside leaderboard, to show first msg on >=10
+        self.leader_best = 11 # outside leaderboard, to show first msg on >=10
 
     def on_log_msg(self, msg, update=0, tag='[LOG]'):
         """
@@ -123,8 +114,9 @@ class Logger(Subscriber):
 
     def on_world_rect(self, **kwargs):
         self.on_update_msg('World is from %(left)i:%(top)i to %(right)i:%(bottom)i' % kwargs)
-        if 'server_msgs' in kwargs:
-            self.on_update_msg('Server message: %(server_msg)s' % kwargs)
+
+    def on_server_version(self, number, text):
+        self.on_log_msg('Server version %s from %s' % (number, text))
 
     def on_cell_eaten(self, eater_id, eaten_id):
         player = self.client.player
@@ -166,14 +158,14 @@ class Logger(Subscriber):
         log = list(format_log(self.log_msgs, w.INFO_SIZE / log_char_w))
         num_log_lines = min(len(log), int(w.INFO_SIZE / log_line_h))
 
-        y_start = w.win_size.y - num_log_lines * log_line_h + 9
+        y_start = w.win_size.y - num_log_lines*log_line_h + 9
 
-        c.fill_rect((0, w.win_size.y - num_log_lines * log_line_h),
-                    size=(w.INFO_SIZE, num_log_lines * log_line_h),
+        c.fill_rect((0, w.win_size.y - num_log_lines*log_line_h),
+                    size=(w.INFO_SIZE, num_log_lines*log_line_h),
                     color=to_rgba(BLACK, .3))
 
         for i, text in enumerate(log[-num_log_lines:]):
-            c.draw_text((0, y_start + i * log_line_h), text,
+            c.draw_text((0, y_start + i*log_line_h), text,
                         align='left', size=10, face='monospace')
 
 
@@ -218,7 +210,6 @@ class GtkControl(Subscriber):
         # order is important, first subscriber gets called first
 
         self.multi_sub = MultiSubscriber(self)
-
         def key(keycode, *subs, disabled=False):
             # subscribe all these subscribers, toggle them when key is pressed
             if isinstance(keycode, str):
@@ -230,8 +221,6 @@ class GtkControl(Subscriber):
 
         self.native_control = NativeControl(client)
         self.multi_sub.sub(self.native_control)
-
-        self.world_viewer = wv = WorldViewer(client.world)
 
         # background
         key(Gdk.KEY_F2, SolidBackground())
@@ -285,14 +274,9 @@ class GtkControl(Subscriber):
                 continue
             connected = True
 
-
-        # use AkiraYasha's Facebook token to start with more mass (> 43, lvl 56)
-        # self.client.send_facebook(
-        #    'g2gDYQFtAAAAEKO6L3c8C8/eXtbtbVJDGU5tAAAAUvOo7JuWAVSczT5Aj0eo0CvpeU8ijGzKy/gXBVCxhP5UO+ERH0jWjAo9bU1V7dU0GmwFr+SnzqWohx3qvG8Fg8RHlL17/y9ifVWpYUdweuODb9c=')
-        #print("Using AkiraYasha's Facebook token")
-
         gtk_watch_client(client)
 
+        self.world_viewer = wv = WorldViewer(client.world)
         wv.button_subscriber = wv.draw_subscriber = wv.input_subscriber = self.multi_sub
         wv.focus_player(client.player)
 
@@ -305,12 +289,6 @@ class GtkControl(Subscriber):
         if val == Gdk.KEY_Escape:
             self.client.disconnect()
             Gtk.main_quit()
-        elif char == 's':
-            self.client.send_spectate()
-        elif char == 'o':
-            self.client.send_explode()
-        elif char == 'r' or val == Gdk.KEY_Return:
-            self.client.send_respawn()
         elif char == 'c':  # reconnect to any server
             self.client.disconnect()
             address, token, *_ = find_server()

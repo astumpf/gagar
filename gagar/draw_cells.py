@@ -23,6 +23,7 @@ class CellsDrawer(Subscriber):
         for cell in sorted(w.world.cells.values(), reverse=True):
             self.draw(c, w, cell, alpha=0.9)
 
+
 class CellNames(Subscriber):
     @staticmethod
     def draw(c, w, cell, pos=None):
@@ -51,7 +52,7 @@ class RemergeTimes(Subscriber):
                 continue
             pos = w.world_to_screen_pos(cell.pos)
             pos.isub(Vec(0, (info_size + nick_size(cell, w)) / 2))
-            c.draw_text(pos, 'TTR %.1fs' % ttr,
+            c.draw_text(pos, 'TTR %.1fs after %.1fs' % (ttr, split_for),
                         align='center', outline=(BLACK, 2), size=info_size)
 
 
