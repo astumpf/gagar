@@ -21,7 +21,7 @@ class CellsDrawer(Subscriber):
     def on_draw_cells(self, c, w):
         # reverse to show small over large cells
         for cell in sorted(w.world.cells.values(), reverse=True):
-            self.draw(c, w, cell, alpha=0.8)
+            self.draw(c, w, cell, alpha=0.9)
 
 class CellNames(Subscriber):
     @staticmethod
