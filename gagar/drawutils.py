@@ -25,7 +25,7 @@ def lerp_smoothing(cur, new, smooth_factor, min_diff=1):
         return cur + diff * smooth_factor
     else:
         return new
-    
+
 
 def frange(start, end, step):
     """same as range(), but allows using floats"""
@@ -80,8 +80,12 @@ class Canvas(object):
                 anchor_y = 'baseline'
 
             # move text to the correct position
-            x_bearing, y_bearing, text_width, text_height, x_advance, y_advance \
-                = c.text_extents(text)
+            try:
+                x_bearing, y_bearing, text_width, text_height, x_advance, y_advance \
+                    = c.text_extents(text)
+            except:
+                return
+
             x, y = map(int, pos)
             x -= x_bearing
 

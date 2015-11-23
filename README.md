@@ -16,6 +16,7 @@ Features
 - skins
 - show eatability/hostility level of other cells
 - force fields for eatable/hostile cells
+- split counter
 - show/hide anything via key bindings
 - zoom
 - config file
