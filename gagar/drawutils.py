@@ -71,16 +71,16 @@ class Canvas(object):
                   color=WHITE, shadow=None, outline=None):
         c = self._cairo_context
         try:
-            c.select_font_face(face)
-            c.set_font_size(size)
-
-            # align overrides anchors
-            if align:
-                anchor_x = align
-                anchor_y = 'baseline'
-
-            # move text to the correct position
             try:
+                c.select_font_face(face)
+                c.set_font_size(size)
+
+                # align overrides anchors
+                if align:
+                    anchor_x = align
+                    anchor_y = 'baseline'
+
+                # move text to the correct position
                 x_bearing, y_bearing, text_width, text_height, x_advance, y_advance \
                     = c.text_extents(text)
             except:
