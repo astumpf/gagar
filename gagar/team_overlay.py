@@ -63,10 +63,15 @@ class TeamOverlay(Subscriber):
             cells = self.tagar_client.team_world.cells.copy()
             for cell in cells.values():
                 if cell.cid not in w.world.cells:
-                    alpha = .66 if cell.mass > (self.tagar_client.player.total_mass * 0.66) else 0.33
-                    c.stroke_circle(world_to_map(cell.pos),
-                                    cell.size * minimap_scale,
-                                    color=to_rgba(cell.color, alpha))
+                    if cell.cid in self.tagar_client.team_cids:
+                        c.fill_circle(world_to_map(cell.pos),
+                                      cell.size * minimap_scale,
+                                      color=to_rgba(cell.color, 0.9))
+                    else:
+                        alpha = .66 if cell.mass > (self.tagar_client.player.total_mass * 0.66) else 0.33
+                        c.stroke_circle(world_to_map(cell.pos),
+                                        cell.size * minimap_scale,
+                                        color=to_rgba(cell.color, alpha))
 
             # draw lines to team members
             for i, player in enumerate(list(self.tagar_client.player_list.values())):
