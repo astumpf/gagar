@@ -70,7 +70,7 @@ class CellMasses(Subscriber):
 
         # draw needed mass to eat it splitted
         text_pos.iadd(Vec(0, info_size))
-        c.draw_text(text_pos, '(%i)' % (cell.mass * 2.33), align='center', outline=(BLACK, 2), size=info_size/2)
+        c.draw_text(text_pos, '(%i)' % (cell.mass * 2.33), align='center', outline=(BLACK, 2), size=info_size/1.5)
 
     def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():

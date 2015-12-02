@@ -157,16 +157,19 @@ class Canvas(object):
         self.fill_rect(pos, size=(4, 4), color=color)
 
     def fill_rect(self, left_top, right_bottom=None, size=None, color=None):
-        c = self._cairo_context
-        left, top = left_top
-        if color:
-            c.set_source_rgba(*color)
-        if right_bottom:
-            right, bottom = right_bottom
-            c.rectangle(left, top, right - left, bottom - top)
-        elif size:
-            c.rectangle(left, top, *size)
-        c.fill()
+        try:
+            c = self._cairo_context
+            left, top = left_top
+            if color:
+                c.set_source_rgba(*color)
+            if right_bottom:
+                right, bottom = right_bottom
+                c.rectangle(left, top, right - left, bottom - top)
+            elif size:
+                c.rectangle(left, top, *size)
+            c.fill()
+        except:
+            return
 
     def stroke_rect(self, left_top, right_bottom=None, size=None,
                     width=None, color=None):
