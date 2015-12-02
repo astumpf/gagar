@@ -62,9 +62,15 @@ class CellMasses(Subscriber):
         if cell.is_food or cell.is_ejected_mass:
             return
         text_pos = Vec(pos) if pos else w.world_to_screen_pos(cell.pos)
+
+        # draw cell's mass
         if cell.name:
             text_pos.iadd(Vec(0, (info_size + nick_size(cell, w)) / 2))
         c.draw_text(text_pos, '%i' % cell.mass, align='center', outline=(BLACK, 2), size=info_size)
+
+        # draw needed mass to eat it splitted
+        text_pos.iadd(Vec(0, info_size))
+        c.draw_text(text_pos, '(%i)' % (cell.mass * 2.33), align='center', outline=(BLACK, 2), size=info_size/2)
 
     def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
