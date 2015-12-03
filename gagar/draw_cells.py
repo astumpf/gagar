@@ -134,7 +134,7 @@ class ForceFields(Subscriber):
 
         if w.player.is_alive:
             own_max_size = max(c.size for c in w.player.own_cells)
-            own_min_mass = min(c.mass for c in w.player.own_cells)
+            own_min_mass = max(min(c.mass for c in w.player.own_cells), own_max_size/2) # prevent confusing force fields due to many small cells
         else:  # spectating or dead, still draw some lines
             own_max_size = own_min_mass = 0
 

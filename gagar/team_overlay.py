@@ -66,7 +66,7 @@ class TeamOverlay(Subscriber):
                     if cell.cid in self.tagar_client.team_cids:
                         c.fill_circle(world_to_map(cell.pos),
                                       cell.size * minimap_scale,
-                                      color=to_rgba(cell.color, 0.9))
+                                      color=to_rgba(cell.color, 0.7))
                     else:
                         alpha = .66 if cell.mass > (self.tagar_client.player.total_mass * 0.66) else 0.33
                         c.stroke_circle(world_to_map(cell.pos),
@@ -74,11 +74,18 @@ class TeamOverlay(Subscriber):
                                         color=to_rgba(cell.color, alpha))
 
             # draw lines to team members
+            if self.tagar_client.player.is_alive:
+                for i, player in enumerate(list(self.tagar_client.player_list.values())):
+                    if player.is_alive:
+                        c.draw_line(world_to_map(w.player.center),
+                                    world_to_map(Vec(player.position_x, player.position_y)),
+                                    width=1, color=GREEN)
+
+            # draw names
             for i, player in enumerate(list(self.tagar_client.player_list.values())):
-                if self.tagar_client.player.is_alive and player.is_alive:
-                    c.draw_line(world_to_map(w.player.center),
-                                world_to_map(Vec(player.position_x, player.position_y)),
-                                width=1, color=GREEN)
+                if player.is_alive:
+                    c.draw_text(world_to_map(Vec(player.position_x, player.position_y)), player.nick,
+                                align='center', color=WHITE, outline=(BLACK, 2), size=8)
 
     def on_draw_hud(self, c, w):
         c.draw_text((10, 30), 'Team', align='left', color=WHITE, outline=(BLACK, 2), size=27)
@@ -106,11 +113,16 @@ class TeamOverlay(Subscriber):
             w.register_button(button)
             c.draw_button(button)
 
-            # draw lines to team members
             if self.tagar_client.player.is_alive and player.is_alive:
-                c.draw_line(w.world_to_screen_pos(w.player.center),
-                            w.world_to_screen_pos(Vec(player.position_x, player.position_y)),
-                            width=2, color=GREEN)
+                # draw lines to team members
+                pos = w.world_to_screen_pos(Vec(player.position_x, player.position_y))
+                c.draw_line(w.world_to_screen_pos(w.player.center), pos, width=2, color=GREEN)
+
+                # TODO draw names
+                #pos.x = min(max(pos.x, 0), w.win_size.x)
+                #pos.y = min(max(pos.y, 0), w.win_size.y)
+                #c.draw_text(pos, player.nick, align='center', color=WHITE, outline=(BLACK, 2), size=12)
+
 
     @staticmethod
     def on_button_hover(button, pos):
