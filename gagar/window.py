@@ -167,15 +167,11 @@ class WorldViewer(object):
         c = Canvas(cairo_context)
         if self.draw_subscriber:
             self.recalculate()
-            try:
-                self.draw_subscriber.on_draw_background(c, self)
-                self.draw_subscriber.on_draw_cells(c, self)
-                self.draw_minimap_backgound(c, self)
-                self.draw_subscriber.on_draw_minimap(c, self)
-                self.draw_subscriber.on_draw_hud(c, self)
-            except SystemError as e:
-                print(e)
-                return
+            self.draw_subscriber.on_draw_background(c, self)
+            self.draw_subscriber.on_draw_cells(c, self)
+            self.draw_minimap_backgound(c, self)
+            self.draw_subscriber.on_draw_minimap(c, self)
+            self.draw_subscriber.on_draw_hud(c, self)
 
     def draw_minimap_backgound(self, c, w):
         if w.world.size:
