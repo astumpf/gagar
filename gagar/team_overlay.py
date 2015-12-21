@@ -40,6 +40,9 @@ class TeamOverlay(Subscriber):
             # draw cell itself
             CellsDrawer.draw(c, w, cell, pos, 0.5)
 
+            # draw cell skin
+            CellSkins.draw(c, w, cell)
+
             # draw names
             CellNames.draw(c, w, cell, pos)
 
@@ -48,9 +51,6 @@ class TeamOverlay(Subscriber):
 
             # draw hostility
             CellHostility.draw(c, w, cell, pos, own_min_mass, own_max_mass, 0.5)
-
-            # draw cell skin
-            CellSkins.draw(c, w, cell)
 
     def on_draw_minimap(self, c, w):
         if w.world.size:
