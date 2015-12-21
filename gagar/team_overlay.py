@@ -4,6 +4,7 @@ from agarnet.utils import get_party_address
 from .subscriber import Subscriber
 from .drawutils import *
 from .draw_cells import *
+from .skins import *
 
 TEAM_OVERLAY_PADDING = 50
 INFO_SIZE = 14
@@ -47,6 +48,9 @@ class TeamOverlay(Subscriber):
 
             # draw hostility
             CellHostility.draw(c, w, cell, pos, own_min_mass, own_max_mass, 0.5)
+
+            # draw cell skin
+            CellSkins.draw(c, w, cell)
 
     def on_draw_minimap(self, c, w):
         if w.world.size:
@@ -115,13 +119,34 @@ class TeamOverlay(Subscriber):
 
             if self.tagar_client.player.is_alive and player.is_alive:
                 # draw lines to team members
+                client_pos = w.world_to_screen_pos(w.player.center)
                 pos = w.world_to_screen_pos(Vec(player.position_x, player.position_y))
-                c.draw_line(w.world_to_screen_pos(w.player.center), pos, width=2, color=GREEN)
+                c.draw_line(client_pos, pos, width=2, color=GREEN)
 
                 # TODO draw names
-                #pos.x = min(max(pos.x, 0), w.win_size.x)
-                #pos.y = min(max(pos.y, 0), w.win_size.y)
-                #c.draw_text(pos, player.nick, align='center', color=WHITE, outline=(BLACK, 2), size=12)
+                text_size = 12
+                border_x = border_y = text_size
+
+                if not border_x < pos.x < w.win_size.x-border_x or not border_y < pos.y < w.win_size.x-border_x:
+                    side_out = abs(pos.x/pos.y) > w.win_size.x/w.win_size.y
+                    alignment = 'left' if pos.x < w.win_size.x/2 else 'right'
+
+                    if side_out and abs(pos.x-client_pos.x) > 0.0:
+                        x = min(max(pos.x, border_x), w.win_size.x-border_x)
+                        pos.y -= client_pos.y
+                        pos.y *= abs((x-client_pos.x)/(pos.x-client_pos.x))
+                        pos.y += client_pos.y
+                        pos.x = x
+                    elif abs(pos.y-client_pos.y) > 0.0:
+                        y = min(max(pos.y, border_y), w.win_size.y-border_y)
+                        pos.x -= client_pos.x
+                        pos.x *= abs((y-client_pos.y)/(pos.y-client_pos.y))
+                        pos.x += client_pos.x
+                        pos.y = y
+
+                    dist = ((w.player.center.x-player.position_x)**2 + (w.player.center.y-player.position_y)**2)**0.5
+
+                    c.draw_text(pos, "%s (%.1f / %.1f)" % (player.nick, player.total_mass, dist), align=alignment, color=WHITE, outline=(BLACK, 2), size=text_size)
 
 
     @staticmethod
