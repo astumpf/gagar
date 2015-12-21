@@ -129,6 +129,8 @@ class Canvas(object):
             c.fill()
         except UnicodeEncodeError:  # tried to display invalid chars
             pass
+        except SystemError:
+            pass
 
     def fill_circle(self, pos, radius, color=None):
         c = self._cairo_context
