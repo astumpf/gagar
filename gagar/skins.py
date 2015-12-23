@@ -19,17 +19,20 @@ def get_skin(name):
         skin_cache[name] = None
 
         def loader():
-            if name[0] is '%': # new gen skins from official agario server
-                skin_url = 'http://agar.io/skins/premium/%s.png' % urllib.request.quote(name[1].upper() + name[2:])
-            elif name in special_names: # old default skins from agario server
-                skin_url = 'http://agar.io/skins/%s.png' % urllib.request.quote(name)
-                #TODO: some premium skins have different url
-            else: # try agariomods
-                skin_url = 'http://skins.agariomods.com/i/c/%s.png' % urllib.request.quote(name + " (Custom)")
-            opener = urllib.request.build_opener()
-            opener.addheaders = moz_headers
             try:
+                if name[0] is '%': # new gen skins from official agario server
+                    skin_url = 'http://agar.io/skins/premium/%s.png' % urllib.request.quote(name[1].upper() + name[2:])
+                elif name in special_names: # old default skins from agario server
+                    skin_url = 'http://agar.io/skins/%s.png' % urllib.request.quote(name)
+                    #TODO: some premium skins have different url
+                else: # try agariomods
+                    skin_url = 'http://skins.agariomods.com/i/c/%s.png' % urllib.request.quote(name + " (Custom)")
+                opener = urllib.request.build_opener()
+                opener.addheaders = moz_headers
+
                 skin_cache[name] = opener.open(skin_url).read()
+            except UnicodeEncodeError:  # tried lookup invalid chars
+                pass
             except urllib.error.HTTPError as e:
                 #print("Error while loading skin from: " + skin_url)
                 #print(e)

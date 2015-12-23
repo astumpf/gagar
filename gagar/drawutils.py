@@ -133,97 +133,120 @@ class Canvas(object):
             pass
 
     def fill_circle(self, pos, radius, color=None):
-        c = self._cairo_context
-        x, y = pos
-        if color:
-            c.set_source_rgba(*color)
-        c.new_sub_path()
-        c.arc(x, y, radius, 0, TWOPI)
-        c.fill()
+        try:
+            c = self._cairo_context
+            x, y = pos
+            if color:
+                c.set_source_rgba(*color)
+            c.new_sub_path()
+            c.arc(x, y, radius, 0, TWOPI)
+            c.fill()
+        except SystemError:
+            pass
 
     def stroke_circle(self, pos, radius, width=None, color=None):
-        c = self._cairo_context
-        x, y = pos
-        if width:
-            c.set_line_width(width)
-        if color:
-            c.set_source_rgba(*color)
-        c.new_sub_path()
-        c.arc(x, y, radius, 0, TWOPI)
-        c.stroke()
+        try:
+            c = self._cairo_context
+            x, y = pos
+            if width:
+                c.set_line_width(width)
+            if color:
+                c.set_source_rgba(*color)
+            c.new_sub_path()
+            c.arc(x, y, radius, 0, TWOPI)
+            c.stroke()
+        except SystemError:
+            pass
 
     def set_pixel(self, pos, color=None):
         self.fill_rect(pos, size=(4, 4), color=color)
 
     def fill_rect(self, left_top, right_bottom=None, size=None, color=None):
-        c = self._cairo_context
-        left, top = left_top
-        if color:
-            c.set_source_rgba(*color)
-        if right_bottom:
-            right, bottom = right_bottom
-            c.rectangle(left, top, right - left, bottom - top)
-        elif size:
-            c.rectangle(left, top, *size)
-        c.fill()
+        try:
+            c = self._cairo_context
+            left, top = left_top
+            if color:
+                c.set_source_rgba(*color)
+            if right_bottom:
+                right, bottom = right_bottom
+                c.rectangle(left, top, right - left, bottom - top)
+            elif size:
+                c.rectangle(left, top, *size)
+            c.fill()
+        except SystemError:
+            pass
 
-    def stroke_rect(self, left_top, right_bottom=None, size=None,
-                    width=None, color=None):
-        c = self._cairo_context
-        left, top = left_top
-        if width:
-            c.set_line_width(width)
-        if color:
-            c.set_source_rgba(*color)
-        if right_bottom:
-            right, bottom = right_bottom
-            c.rectangle(left, top, right - left, bottom - top)
-        elif size:
-            c.rectangle(left, top, *size)
-        c.stroke()
+    def stroke_rect(self, left_top, right_bottom=None, size=None, width=None, color=None):
+        try:
+            c = self._cairo_context
+            left, top = left_top
+            if width:
+                c.set_line_width(width)
+            if color:
+                c.set_source_rgba(*color)
+            if right_bottom:
+                right, bottom = right_bottom
+                c.rectangle(left, top, right - left, bottom - top)
+            elif size:
+                c.rectangle(left, top, *size)
+            c.stroke()
+        except SystemError:
+            pass
 
     def draw_line(self, start, *points, relative=None, width=None, color=None):
-        c = self._cairo_context
-        if width:
-            c.set_line_width(width)
-        if color:
-            c.set_source_rgba(*color)
-        c.move_to(*start)
-        if relative:
-            c.rel_line_to(*relative)
-        else:
-            for point in points:
-                c.line_to(*point)
-        c.stroke()
+        try:
+            c = self._cairo_context
+            if width:
+                c.set_line_width(width)
+            if color:
+                c.set_source_rgba(*color)
+            c.move_to(*start)
+            if relative:
+                c.rel_line_to(*relative)
+            else:
+                for point in points:
+                    c.line_to(*point)
+            c.stroke()
+        except SystemError:
+            pass
 
     def fill_polygon(self, start, *points, color=None):
-        c = self._cairo_context
-        if color:
-            c.set_source_rgba(*color)
-        c.move_to(*start)
-        for point in points:
-            c.line_to(*point)
-        c.fill()
+        try:
+            c = self._cairo_context
+            if color:
+                c.set_source_rgba(*color)
+            c.move_to(*start)
+            for point in points:
+                c.line_to(*point)
+            c.fill()
+        except SystemError:
+            pass
 
     def fill_color(self, color):
-        c = self._cairo_context
-        c.set_source_rgba(*color)
-        c.paint()
+        try:
+            c = self._cairo_context
+            c.set_source_rgba(*color)
+            c.paint()
+        except SystemError:
+            pass
 
     def draw_button(self, button):
-        if button.fill:
-            if button.highlight:
-                fill_color = button.highlight_color
-            else:
-                fill_color = button.fill_color
-            self.fill_rect((button.x, button.y), size=(button.width, button.height), color=fill_color)
-        if button.border:
-            self.stroke_rect((button.x, button.y), size=(button.width, button.height), color=button.border_color)
+        try:
+            if button.fill:
+                if button.highlight:
+                    fill_color = button.highlight_color
+                else:
+                    fill_color = button.fill_color
+                self.fill_rect((button.x, button.y), size=(button.width, button.height), color=fill_color)
+            if button.border:
+                self.stroke_rect((button.x, button.y), size=(button.width, button.height), color=button.border_color)
 
-        if len(button.text) > 0:
-            self.draw_text((button.x + int(button.width / 2), button.y + int((button.height) / 2)),
-                           button.text, button.text_size, anchor_x='center', anchor_y='center', color=button.text_color)
+            if len(button.text) > 0:
+                self.draw_text((button.x + int(button.width / 2), button.y + int((button.height) / 2)),
+                               button.text, button.text_size, anchor_x='center', anchor_y='center', color=button.text_color)
 
-        return button
+            return button
+        except SystemError:
+            pass
 
 
