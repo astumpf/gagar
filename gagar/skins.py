@@ -71,16 +71,20 @@ class CellSkins(Subscriber):
 
         skin_surface = skin_surface_cache[name]
         skin_radius = skin_surface.get_width() / 2
-        c.save()
-        c.translate(*w.world_to_screen_pos(cell.pos))
-        scale = w.world_to_screen_size(cell.draw_size / skin_radius)
-        c.scale(scale, scale)
-        c.translate(-skin_radius, -skin_radius)
-        c.set_source_surface(skin_surface, 0, 0)
-        c.new_sub_path()
-        c.arc(skin_radius, skin_radius, skin_radius, 0, TWOPI)
-        c.fill()
-        c.restore()
+        try:
+            c.save()
+            c.translate(*w.world_to_screen_pos(cell.pos))
+            scale = w.world_to_screen_size(cell.draw_size / skin_radius)
+            c.scale(scale, scale)
+            c.translate(-skin_radius, -skin_radius)
+            c.set_source_surface(skin_surface, 0, 0)
+            c.new_sub_path()
+            c.arc(skin_radius, skin_radius, skin_radius, 0, TWOPI)
+            c.fill()
+            c.restore()
+        except SystemError:
+            print("Error while drawing skin: " + name)
+            pass
 
     def on_draw_cells(self, c, w):
         for cell in w.world.cells.values():
