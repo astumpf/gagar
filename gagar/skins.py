@@ -4,13 +4,13 @@ import urllib.request
 
 import cairo
 
-from agarnet.utils import moz_headers, special_names
+from agarnet.utils import default_headers, special_names
 from .drawutils import TWOPI
 from .subscriber import Subscriber
 
 
-
-skin_cache = {}
+skin_cache = {}  # raw PNG data
+skin_surface_cache = {}  # images in cairo format
 
 
 def get_skin(name):
@@ -28,7 +28,7 @@ def get_skin(name):
                 else: # try agariomods
                     skin_url = 'http://skins.agariomods.com/i/c/%s.png' % urllib.request.quote(name + " (Custom)")
                 opener = urllib.request.build_opener()
-                opener.addheaders = moz_headers
+                opener.addheaders = default_headers
 
                 skin_cache[name] = opener.open(skin_url).read()
             except UnicodeEncodeError:  # tried lookup invalid chars
@@ -42,9 +42,6 @@ def get_skin(name):
         t.setDaemon(True)
         t.start()
     return skin_cache[name]
-
-
-skin_surface_cache = {}
 
 
 class CellSkins(Subscriber):

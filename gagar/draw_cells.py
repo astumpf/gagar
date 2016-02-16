@@ -46,8 +46,8 @@ class RemergeTimes(Subscriber):
         now = time()
         for cell in w.player.own_cells:
             split_for = now - cell.spawn_time
-            # formula by DebugMonkey
-            ttr = w.player.total_mass * 0.02 + 30 - split_for
+            # formula by HungryBlob
+            ttr = max(30, cell.size // 5) - split_for
             if ttr < 0:
                 continue
             pos = w.world_to_screen_pos(cell.pos)
